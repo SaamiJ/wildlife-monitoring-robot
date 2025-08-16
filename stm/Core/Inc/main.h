@@ -28,10 +28,14 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"
-#include "motor_control.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "motor_control.h"
+#include "string.h"
+#include <stdio.h>
+#include <stdint.h>
 
 /* USER CODE END Includes */
 

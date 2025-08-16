@@ -1,1 +1,4 @@
-../Core/Src/motor_control.c:10:6:setSpeed	3
+../Core/Src/motor_control.c:10:6:setSpeed	8
+../Core/Src/motor_control.c:27:6:Motor_SetSpeedLeft	1
+../Core/Src/motor_control.c:32:6:Motor_SetSpeedRight	1
+../Core/Src/motor_control.c:37:6:Motor_StopAll	1

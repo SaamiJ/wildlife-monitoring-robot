@@ -1,1 +1,4 @@
-../Core/Src/motor_control.c:10:6:setSpeed	16	static
+../Core/Src/motor_control.c:10:6:setSpeed	24	static
+../Core/Src/motor_control.c:27:6:Motor_SetSpeedLeft	16	static
+../Core/Src/motor_control.c:32:6:Motor_SetSpeedRight	16	static
+../Core/Src/motor_control.c:37:6:Motor_StopAll	8	static
