@@ -1,6 +1,14 @@
 ../Core/Src/main.c:69:5:main	1
+<<<<<<< HEAD
 ../Core/Src/main.c:123:6:SystemClock_Config	4
 ../Core/Src/main.c:184:13:MX_TIM1_Init	8
 ../Core/Src/main.c:268:13:MX_USART2_UART_Init	2
 ../Core/Src/main.c:303:13:MX_GPIO_Init	1
 ../Core/Src/main.c:348:6:Error_Handler	1
+=======
+../Core/Src/main.c:121:6:SystemClock_Config	4
+../Core/Src/main.c:182:13:MX_TIM1_Init	7
+../Core/Src/main.c:262:13:MX_USART2_UART_Init	2
+../Core/Src/main.c:297:13:MX_GPIO_Init	1
+../Core/Src/main.c:332:6:Error_Handler	1
+>>>>>>> parent of 20c6cc0 (Code for testing one singular motor control + setting up Timer to generate PWM through two channels (one for left motor and one for right motor))
