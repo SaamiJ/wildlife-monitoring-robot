@@ -49,7 +49,7 @@ def main():
 
     # User menu
     print("Commands:")
-    print("  pwm <0-100>   -> set duty (%)")
+    print("  pwm <0-1000>   -> set duty (%)")
     print("  stop          -> stop PWM (0%)")
     print("  raw <text>    -> send raw line")
     print("  quit          -> exit\n")
@@ -73,14 +73,14 @@ def main():
             if cmd.lower() in ("quit", "exit"):
                 break
 
-            # If pwm input, clamp and send integer 0-100
+            # If pwm input, clamp and send integer 0-1000
             if cmd.lower().startswith("pwm "):
                 try:
                     pct = int(cmd.split()[1])
-                    pct = max(0, min(100, pct))
+                    pct = max(0, min(1000, pct))
                     send_line(ser, f"PWM {pct}")
                 except (IndexError, ValueError):
-                    print("Usage: pwm <0-100>")
+                    print("Usage: pwm <0-1000>")
             
             # If stop input, set PWM to 0
             elif cmd.lower() == "stop":
@@ -89,7 +89,7 @@ def main():
             elif cmd.lower().startswith("raw "):
                 send_line(ser, cmd[4:])
             else:
-                print("Unknown: pwm <0-100>, stop, raw <text>, quit")
+                print("Unknown: pwm <0-1000>, stop, raw <text>, quit")
 
             for resp in read_lines_nonblock(ser):
                 print(f"[STM32] {resp}")
