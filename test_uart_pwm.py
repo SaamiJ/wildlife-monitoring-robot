@@ -1,8 +1,8 @@
 # Import libraries
 import sys, time
-import pyserial as serial
+import serial
 
-PORT = "/dev/serial0"   # Pi’s primary UART alias
+PORT = "/dev/ttyS0"   # Pi’s primary UART alias
 BAUD = 115200           # Match STM32 
 TIMEOUT_S = 0.2         
 
