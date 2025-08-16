@@ -29,6 +29,9 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"
 #include "motor_control.h"
+#include "string.h"
+#include <stdio.h>
+#include <stdint.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -74,6 +77,8 @@ void Error_Handler(void);
 #define LD3_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
+#define RX_BUFFER_SIZE 100
 
 /* USER CODE END Private defines */
 

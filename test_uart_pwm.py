@@ -1,6 +1,6 @@
 # Import libraries
 import sys, time
-import serial
+import pyserial as serial
 
 PORT = "/dev/serial0"   # Pi’s primary UART alias
 BAUD = 115200           # Match STM32 

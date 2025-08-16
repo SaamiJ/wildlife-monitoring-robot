@@ -46,6 +46,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+uint8_t rx_buffer[RX_BUFFER_SIZE];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,15 +97,19 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  HAL_UART_Receive_IT(&huart2, rx_buffer, RX_BUFFER_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	setSpeed(500);
+    Motor_SetSpeedLeft(500);
+    Motor_SetSpeedRight(500);
 	HAL_Delay(5000);
-	setSpeed(-500);
+    Motor_SetSpeedLeft(-500);
+    Motor_SetSpeedRight(-500);
 	HAL_Delay(5000);
 
     /* USER CODE END WHILE */
@@ -335,6 +341,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)
+    {
+        // Null-terminate the received data
+        rx_buffer[rx_buffer[0]] = '\0';
+
+        // Print the received data (For Debugging)
+        printf("[Received from Pi]: %s\n", rx_buffer);
+
+        // Restart UART receive in interrupt mode
+        HAL_UART_Receive_IT(&huart2, rx_buffer, RX_BUFFER_SIZE);
+    }
+}
 
 /* USER CODE END 4 */
 
