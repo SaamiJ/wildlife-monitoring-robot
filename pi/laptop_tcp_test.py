@@ -2,7 +2,7 @@ import socket
 import keyboard
 
 # Define the Pi Zero's IP address and port
-HOST = '172.20.10.5'  # Replace with your Pi's IP
+HOST = 'raspberrypi.local'  # Replace with your Pi's IP
 PORT = 5000
 
 # Create socket connection to Pi
