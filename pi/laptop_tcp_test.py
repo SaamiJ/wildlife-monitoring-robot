@@ -37,4 +37,7 @@ while True:
         sock.sendall(b'STOP\n')  # Send stop command
         break
 
+    while keyboard.is_pressed('+') or keyboard.is_pressed('-'):
+        pass
+
 sock.close()  # Close the socket
