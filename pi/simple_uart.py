@@ -11,16 +11,17 @@ ser = serial.Serial(
     timeout=1
 )
 
-direction = 'F'  # Direction can be 'F', 'B', 'L', 'R'
-pwm_value = 700  # PWM value (0-1000)
+direction = 'R'  # Direction can be 'F', 'B', 'L', 'R'
+pwm_value = 999  # PWM value (0-1000)
 
 try:
     while True:
-        
+
         message = f"{direction}{pwm_value}\n"
         ser.write(message.encode())
+        print(f"Sent: {message.strip()}")
 
-        time.sleep(5)
+        time.sleep(0.5)
 
 except KeyboardInterrupt:
     ser.close()
