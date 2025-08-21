@@ -28,9 +28,6 @@ class GUI(tk.Tk):
 
         # checking for user inputinput
         self.bind("<Key>", self.keyboard_input)
-        self.bind("<Escape>", lambda e: self.on_close)
-        self.bind("<Return>", lambda e: self.save_image)
-        
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -104,27 +101,67 @@ class GUI(tk.Tk):
         self.cameraControlLabel.grid(row=0, column=0, sticky="nw")
         self.btn_start = tk.Button(self.cameraControlFrame, text="Start Camera", width=12, height=2, command=self.start)
         self.btn_start.grid(row=1, column=0, padx=5, pady=5)
-        self.btn_stop_camera = tk.Button(self.cameraControlFrame, text="Stop Camera", width=12, height=2, command=self.stop)
+        self.btn_stop_camera = tk.Button(self.cameraControlFrame, text="Stop Camera", width=12, height=2, command=self.stop_camera)
         self.btn_stop_camera.grid(row=1, column=1, padx=5, pady=5)
         self.btn_save_image = tk.Button(self.cameraControlFrame, text="Save Image", width=12, height=2, command=self.save_image)
         self.btn_save_image.grid(row=1, column=2, padx=5, pady=5)
     
     def keyboard_input(self, event):
+        print(f"Key pressed: {event.char}")
         if event.char == 'w':
-            print("Move forward")
+            self.move_forward()
 
         if event.char == 's':  
-            print("Move backward")
+            self.move_backward()
 
         if event.char == 'a':
-            self.start()
-            print("Turn left")
+            self.turn_left()
 
         if event.char == 'd':
-            print("Turn right")
+            self.turn_right()
 
-        if event.char == 'space':
-            print("Stop")
+        if event.keysym == "space":
+            self.stop_movement()
+        
+        if event.keysym == "Tab":
+            self.start()
+
+        if event.keysym == "Return":
+            self.save_image()
+
+        if event.keysym == "Escape":
+            self.on_close()
+
+        if event.char == '=':
+            self.increase_speed()
+
+        if event.char == '-':
+            self.decrease_speed()
+
+    def increase_speed(self):
+        current_speed = self.speedSlider.get()
+        new_speed = min(current_speed + 10, 100)
+        self.speedSlider.set(new_speed)
+    
+    def decrease_speed(self):
+        current_speed = self.speedSlider.get()
+        new_speed = max(current_speed - 10, 0)
+        self.speedSlider.set(new_speed)
+
+    def move_forward(self):
+        print("Moving forward")
+    
+    def move_backward(self):
+        print("Moving backward")  
+
+    def turn_left(self):
+        print("Turning left")
+
+    def turn_right(self):
+        print("Turning right")
+
+    def stop_movement(self):
+        print("Stopping movement")
 
     def start(self):
         if self._running:
@@ -137,7 +174,7 @@ class GUI(tk.Tk):
         self._running = True
         self.after(0, self.update_frame)
 
-    def stop(self):
+    def stop_camera(self):
         self._running = False
         if self.cap:
             self.cap.release()
@@ -166,7 +203,7 @@ class GUI(tk.Tk):
             self.videoLabel.configure(image=self._imgtk_cache)
         else:
             # Try to recover on read failures
-            self.stop()
+            self.stop_camera()
             self.start()
             return
         
@@ -192,7 +229,7 @@ class GUI(tk.Tk):
         self.load_images_list()
 
     def on_close(self):
-        self.stop()
+        self.stop_camera()
         self.destroy()
     
     def load_images_list(self):
