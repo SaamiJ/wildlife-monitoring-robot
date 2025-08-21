@@ -11,14 +11,14 @@ ser = serial.Serial(
     timeout=1
 )
 
-# Set the static integer value to be sent
-static_value = 42  # Modify this value as needed
+direction = 'F'  # Direction can be 'F', 'B', 'L', 'R'
+pwm_value = 700  # PWM value (0-1000)
 
 try:
     while True:
-        # Send static integer value as bytes (convert integer to byte format)
-        ser.write(f"{static_value}\n".encode())  # Send the static integer value as a string
-        print(f"Sent: {static_value}")
+        
+        message = f"{direction}{pwm_value}\n"
+        ser.write(message.encode())
 
         time.sleep(5)
 
