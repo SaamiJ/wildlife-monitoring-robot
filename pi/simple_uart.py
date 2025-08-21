@@ -11,18 +11,16 @@ ser = serial.Serial(
     timeout=1
 )
 
+# Set the static integer value to be sent
+static_value = 42  # Modify this value as needed
+
 try:
     while True:
-        # Send message
-        ser.write(b"Hello STM32!\n")
-        print("Sent: Hello STM32!")
+        # Send static integer value as bytes (convert integer to byte format)
+        ser.write(f"{static_value}\n".encode())  # Send the static integer value as a string
+        print(f"Sent: {static_value}")
 
-        # Receive response (if STM32 replies)
-        if ser.in_waiting > 0:
-            received = ser.readline().decode('utf-8').strip()
-            print(f"Received: {received}")
-
-        time.sleep(1)
+        time.sleep(5)
 
 except KeyboardInterrupt:
     ser.close()
