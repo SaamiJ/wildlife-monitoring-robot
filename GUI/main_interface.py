@@ -88,11 +88,11 @@ class GUI(tk.Tk):
         self.cameraControlFrame.grid(row=3, column=1, sticky="w", padx=10, pady=10)
         self.cameraControlLabel = tk.Label(self.cameraControlFrame, text="Camera Control:", bg="white", fg="black", font=("Arial", 16, "bold"))
         self.cameraControlLabel.grid(row=0, column=0, sticky="nw")
-        self.btn_start = tk.Button(self.cameraControlFrame, text="Start Camera", width=12, height=2, command=self.start)
+        self.btn_start = ttk.Button(self.cameraControlFrame, text="Start Camera", width=12, command=self.start)
         self.btn_start.grid(row=1, column=0, padx=5, pady=5)
-        self.btn_stop_camera = tk.Button(self.cameraControlFrame, text="Stop Camera", width=12, height=2, command=self.stop)
+        self.btn_stop_camera = ttk.Button(self.cameraControlFrame, text="Stop Camera", width=12, command=self.stop)
         self.btn_stop_camera.grid(row=1, column=1, padx=5, pady=5)
-        self.btn_save_image = tk.Button(self.cameraControlFrame, text="Save Image", width=12, height=2, command=self.save_image)
+        self.btn_save_image = ttk.Button(self.cameraControlFrame, text="Save Image", width=12, command=self.save_image)
         self.btn_save_image.grid(row=1, column=2, padx=5, pady=5)
     
     def keyboard_input(self, event):
@@ -173,7 +173,7 @@ class GUI(tk.Tk):
         if not ok:
             messagebox.showerror("Error", "Failed to capture frame.")
             return
-        filename = f"image_{self.saved_image_count}.jpg"
+        filename = f"image_{self.saved_image_count}.png"
         self.saved_image_count += 1
         cv2.imwrite(filename, frame)
 
