@@ -36,6 +36,7 @@ extern "C" {
 #include "string.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /* USER CODE END Includes */
 
@@ -61,6 +62,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -75,7 +78,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-#define RX_BUFFER_SIZE 100
+#define RX_BUFFER_SIZE 5
 
 /* USER CODE END Private defines */
 

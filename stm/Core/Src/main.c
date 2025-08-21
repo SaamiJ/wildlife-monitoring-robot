@@ -46,8 +46,9 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
-char rx_buffer[50];
-char tx_buffer[] = "Hello Raspberry Pi!\r\n";
+char rx_buffer[RX_BUFFER_SIZE];
+char direction;
+int pwm_value;
 
 /* USER CODE END PV */
 
@@ -99,28 +100,37 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  memset(rx_buffer, 0, sizeof(rx_buffer));
+  HAL_UART_Receive_IT(&huart2, (uint8_t*)rx_buffer, RX_BUFFER_SIZE);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-	// Receive data from Raspberry Pi
-	HAL_UART_Receive_IT(&huart2, (uint8_t*)rx_buffer, sizeof(rx_buffer));
-	printf("Received: %s\n", rx_buffer);
-
-	// Send response back
-	HAL_UART_Transmit_IT(&huart2, (uint8_t*)tx_buffer, strlen(tx_buffer));
-	HAL_Delay(1000);
-
-//	Motor_SetSpeedLeft(500);
-//	Motor_SetSpeedRight(500);
-//	HAL_Delay(5000);
-//	Motor_SetSpeedLeft(-500);
-//	Motor_SetSpeedRight(-500);
-//	HAL_Delay(5000);
-
+    // Motor control logic based on direction and pwm_value
+    switch (direction)
+    {
+        case 'F':  // Forward
+            Motor_SetSpeedLeft(pwm_value);  // Set left motor speed
+            Motor_SetSpeedRight(pwm_value); // Set right motor speed
+            break;
+        case 'B':  // Backward
+            Motor_SetSpeedLeft(-pwm_value); // Reverse left motor
+            Motor_SetSpeedRight(-pwm_value); // Reverse right motor
+            break;
+        case 'L':  // Left
+            Motor_SetSpeedLeft(-pwm_value); // Reverse left motor for left turn
+            Motor_SetSpeedRight(pwm_value); // Forward right motor for left turn
+            break;
+        case 'R':  // Right
+            Motor_SetSpeedLeft(pwm_value);  // Forward left motor for right turn
+            Motor_SetSpeedRight(-pwm_value); // Reverse right motor for right turn
+            break;
+        default:  // Stop all motors if direction is invalid or unrecognized
+            Motor_StopAll();
+            break;
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -292,7 +302,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.Mode = UART_MODE_RX;
   huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
@@ -351,20 +361,21 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-//{
-//    if (huart->Instance == USART2)
-//    {
-//        // Null-terminate the received data
-//        rx_buffer[rx_buffer[0]] = '\0';
-//
-//        // Print the received data (For Debugging)
-//        printf("[Received from Pi]: %s\n", rx_buffer);
-//
-//        // Restart UART receive in interrupt mode
-//        HAL_UART_Receive_IT(&huart2, rx_buffer, RX_BUFFER_SIZE);
-//    }
-//}
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)  // Ensure it's the correct UART instance
+    {
+        // Null-terminate the received string properly
+    	rx_buffer[RX_BUFFER_SIZE - 1] = '\0';  // Ensure null termination
+
+        // Ensure the received command is of the correct format (e.g., "F700")
+        direction = rx_buffer[0];
+        pwm_value = atoi((char*)&rx_buffer[1]);
+
+        // Restart UART receive interrupt mode for continuous reception
+        HAL_UART_Receive_IT(&huart2, (uint8_t*)rx_buffer, RX_BUFFER_SIZE);
+    }
+}
 
 /* USER CODE END 4 */
 
