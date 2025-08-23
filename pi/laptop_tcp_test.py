@@ -11,21 +11,21 @@ sock.connect((HOST, PORT))
 
 print("Connected to Pi Zero 2. Use WASD to control direction. Use + and - for speed.")
 
-speed = 500  # Initial speed (duty cycle from 0-1000)
+speed = 500  # Initial speed (duty cycle from 0-999)
 
 while True:
     # Read keyboard input to control motor direction and speed
     if keyboard.is_pressed('w'):
-        sock.sendall(f'F{speed}\n'.encode())  # Forward with current speed
+        sock.sendall(f'F{speed}\n'.encode())  # Forward
     
     elif keyboard.is_pressed('s'):
-        sock.sendall(f'B{speed}\n'.encode())  # Backward with current speed
+        sock.sendall(f'B{speed}\n'.encode())  # Backward
     
     elif keyboard.is_pressed('a'):
-        sock.sendall(f'L{speed}\n'.encode())  # Turn left
+        sock.sendall(f'L{speed}\n'.encode())  # Left
     
     elif keyboard.is_pressed('d'):
-        sock.sendall(f'R{speed}\n'.encode())  # Turn right
+        sock.sendall(f'R{speed}\n'.encode())  # Right
 
     # Adjust speed dynamically with + and -
     elif keyboard.is_pressed('+') and speed < 999:

@@ -13,36 +13,7 @@ def open_serial():
         timeout=1
     )
 
-# Normalize and validate one command like "F700"
-def normalize_command(raw: str):
-    if not raw:
-        return None
-    s = raw.strip().upper()
-
-    if len(s) < 2:
-        return None
-
-    direction = s[0]
-    if direction not in ("F", "B", "L", "R"):
-        return None
-
-    digits = "".join(ch for ch in s[1:] if ch.isdigit())
-    if digits == "":
-        return None
-
-    try:
-        val = int(digits)
-    except ValueError:
-        return None
-
-    if not (0 <= val <= 999):
-        return None
-
-    # Zero-pad to 3 digits; STM sees exactly 4 chars + newline
-    return f"{direction}{val:03d}\n"
-
 def main():
-    # ---------- TCP setup ----------
     HOST = '0.0.0.0'
     PORT = 5000
 
@@ -61,33 +32,19 @@ def main():
                 conn, addr = srv.accept()
                 print(f"[TCP] Connected by {addr}")
                 with conn:
-                    buf = ""
                     while True:
-                        chunk = conn.recv(1024)
-                        if not chunk:
+                        data = conn.recv(1024).decode().strip()
+                        if not data:
                             print("[TCP] Client disconnected")
                             break
 
-                        # Accumulate and split on any whitespace/newlines
-                        buf += chunk.decode(errors="ignore")
-                        parts = buf.split()     # splits on any whitespace
-                        # If the buffer ended without trailing whitespace,
-                        # keep the last (possibly partial) token
-                        buf = "" if buf.endswith(tuple([" ", "\n", "\r", "\t"])) else parts.pop() if parts else ""
-
-                        for token in parts:
-                            msg = normalize_command(token)
-                            if msg is None:
-                                print(f"[DROP] Invalid command: {token!r}")
-                                continue
-
-                            # Forward to UART
-                            try:
-                                ser.write(msg.encode("ascii"))
-                                print(f"[UART] Sent: {msg.strip()}")
-                            except Exception as e:
-                                print(f"[UART] Write error: {e}")
-                                # If UART fails, you could optionally close/reopen here
+                        # Forward raw command directly to UART
+                        msg = data + "\n"
+                        try:
+                            ser.write(msg.encode("ascii"))
+                            print(f"[UART] Sent: {data}")
+                        except Exception as e:
+                            print(f"[UART] Write error: {e}")
 
     except KeyboardInterrupt:
         print("\n[SYS] Interrupted by user")
