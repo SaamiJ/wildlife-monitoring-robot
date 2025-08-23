@@ -10,6 +10,18 @@ import cv2
 import time
 import socket
 
+### Steps for running in Docker ### 
+# 1. Install VcXsrv (https://vcxsrv.com/)
+# 2. Start VcXsrv with the following options:
+#       - Choose Multiple windows
+#       - Set display number to 0
+#       - Enable "disable access conrol"
+#       - Click Next and Finish
+# 3. Navigate to the GUI directory
+# 4. Start Docker Desktop
+# 5. Run "docker pull saamij/wildlife-gui:latest"
+# 6. Run "docker run -e DISPLAY=host.docker.internal:0 --rm -v /tmp/.X11-unix:/tmp/.X11-unix wildlife-gui"
+
 class GUI(tk.Tk):
     def __init__(self, camera=0):
         super().__init__()
