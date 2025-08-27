@@ -17,15 +17,15 @@ The **Wildlife Monitoring Robot** is a tele-operated mobile robot designed for w
 
 ### Hardware Components:
 - **Pi Zero 2 W**: Acts as the main communication hub for wireless communication with the base station and relay to STM32.
-- **STM32 Nucleo-L432KC**: Controls motor drivers.
-- **L298N Motor Driver**: Drives the DC motors based on PWM signals.
+- **STM32 Nucleo-L432KC**: Controls motors via Motor Driver.
+- **L298N Motor Driver**: Drives the DC motors based on PWM signals from the STM32.
 - **Microphone**: For audio capture.
 - **USB Camera**: For live streaming and visual monitoring.
 
 ### Software Components:
-- **Pi (Server)**: A Python TCP server running on the **Pi Zero 2 W** to handle incoming control commands from the laptop and forward them to the STM via UART. Also sends video feed to the base station.
-- **Base Station (Client)**: A Python script running on the base station that reads keyboard inputs through a GUI and sends motor control commands to the Pi Zero 2.
-- **STM32 Firmware**: Firmware running on the STM32 to process incoming commands from the Pi and control the motors accordingly via PWM signals.
+- **Pi (Server)**: A Python TCP server running on the **Pi Zero 2 W** that handles incoming control commands from the base=station and forwards them to the STM32 via UART. Also sends video feed to the base station from the USB Camera.
+- **Base Station (Client)**: A Python script that launches a GUI which handles the sending of control commands to the Pi through TCP and also handles the streaming of video feed to the GUI window.
+- **STM32 Firmware**: Firmware running on the STM32 that processes incoming commands from the Pi and uses them to control the motors accordingly via PWM signals.
 
 ---
 
