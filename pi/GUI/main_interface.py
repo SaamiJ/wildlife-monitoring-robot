@@ -41,9 +41,95 @@ class GUI(tk.Tk):
         self.title("Wildlife Monitoring Robot Interface")
         self.config(bg="white")
 
-        # Video area, status area, and control layout remain unchanged...
-        # (Code for interface layout remains as in the previous snippet)
+        # video area
+        self.videoFrame = tk.Frame(self, width=960, height=540, bg="skyblue")
+        self.videoFrame.grid(row=0, column=0, rowspan=3, columnspan=3, sticky="w", padx=10, pady=10)
+        self.videoFrame.grid_propagate(False)
+        self.videoLabel = tk.Label(self.videoFrame, text="Camera Video", bg="lightgray")
+        self.videoLabel.grid(row=0, column=0, sticky="nw")
 
+        # all the status area
+        self.fpsFrame = tk.Frame(self, width=120, height=150, bg="white")
+        self.fpsFrame.grid(row=0, column=3, sticky="e", padx=10, pady=10)
+        self.fpsLabel = tk.Label(self.fpsFrame, text="FPS\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.fpsLabel.grid(row=0, column=0, sticky="nw", pady=20)
+        self.leftWheelLabel = tk.Label(self.fpsFrame, text="Left Wheel (rpm)\t: ", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.leftWheelLabel.grid(row=1, column=0, sticky="w", pady=5)
+        self.rightWheelLabel = tk.Label(self.fpsFrame, text="Right Whee (rpm)\t: ", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.rightWheelLabel.grid(row=2, column=0, sticky="w", pady=5)
+
+        # info area
+        self.connectionStatusFrame = tk.Frame(self, width=120, height=150, bg="white")
+        self.connectionStatusFrame.grid(row=0, column=4, sticky="w", padx=10, pady=10)
+        self.connectionStatusLabelTitle = tk.Label(self.connectionStatusFrame, text="Status:", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.connectionStatusLabelTitle.grid(row=0, column=0, sticky="nw")
+        self.connectionStatusLabel = tk.Label(self.connectionStatusFrame, text="Disconnected", bg="white", fg="red", font=("Arial", 14, "bold"))
+        self.connectionStatusLabel.grid(row=1, column=0, sticky="nw")
+        self.movementStatus = tk.Label(self.connectionStatusFrame, text="\nIdle", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.movementStatus.grid(row=2, column=0, sticky="s")
+        self.connectButton = ttk.Button(self.connectionStatusFrame, text="Connect", command=self.connection_setup, width=7)
+        self.connectButton.grid(row=3, column=0, padx=5, pady=5)
+
+        # Speed Scroll
+        self.speedFrame = tk.Frame(self, width=300, height=180, bg="white")
+        self.speedFrame.grid(row=3, column=3, columnspan=2, sticky="nw", padx=10, pady=10)
+        self.speedSlider = tk.Scale(
+            self.speedFrame, from_=300, to=999, orient=tk.HORIZONTAL,
+            label="Speed Control", bg="white", fg="black",
+            font=("Arial", 16, "bold"), length=280
+        )
+        self.speedSlider.set(50)  # Set initial value to 50
+        self.speedSlider.grid(row=0, column=0, padx=10, pady=10)
+
+        # Movement Control
+        self.movemenrtFrame = tk.Frame(self, width=400, height=400, bg="white")
+        self.movemenrtFrame.grid(row=3, column=0, sticky="w", padx=10, pady=10)
+        self.movementLabel = tk.Label(self.movemenrtFrame, text="Movement Control:", bg="white", fg="black", font=("Arial", 16, "bold"))
+        self.movementLabel.grid(row=0, column=0, sticky="nw")
+        self.btn_forward = tk.Button(self.movemenrtFrame, text="↑ Forward", command=self.move_forward, width=8, height=4)
+        self.btn_forward.grid(row=1, column=1, padx=5, pady=5)
+        self.btn_left = tk.Button(self.movemenrtFrame, text="← Left", command=self.turn_left, width=8, height=4)
+        self.btn_left.grid(row=2, column=0, padx=5, pady=5)
+        self.btn_stop = tk.Button(self.movemenrtFrame, text="■ Stop", command=self.stop_movement, width=8, height=4)
+        self.btn_stop.grid(row=2, column=1, padx=5, pady=5)
+        self.btn_right = tk.Button(self.movemenrtFrame, text="Right →", command=self.turn_right, width=8, height=4)
+        self.btn_right.grid(row=2, column=2, padx=5, pady=5)
+        self.btn_back = tk.Button(self.movemenrtFrame, text="↓ Back", command=self.move_backward, width=8, height=4)
+        self.btn_back.grid(row=3, column=1, padx=5, pady=5)
+
+        # Camera Control
+        self.cameraControlFrame = tk.Frame(self, width=400, height=400, bg="white")
+        self.cameraControlFrame.grid(row=3, column=1, sticky="w", padx=10, pady=10)
+        self.cameraControlLabel = tk.Label(self.cameraControlFrame, text="Camera Control:", bg="white", fg="black", font=("Arial", 16, "bold"))
+        self.cameraControlLabel.grid(row=0, column=0, sticky="nw")
+        self.btn_start = tk.Button(self.cameraControlFrame, text="Start Camera", width=12, height=2, command=self.start)
+        self.btn_start.grid(row=1, column=0, padx=5, pady=5)
+        self.btn_stop_camera = tk.Button(self.cameraControlFrame, text="Stop Camera", width=12, height=2, command=self.stop_camera)
+        self.btn_stop_camera.grid(row=1, column=1, padx=5, pady=5)
+        self.btn_save_image = tk.Button(self.cameraControlFrame, text="Save Image", width=12, height=2, command=self.save_image)
+        self.btn_save_image.grid(row=1, column=2, padx=5, pady=5)
+
+    def connection_setup(self):
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((self.host, self.port))
+            self.connectionStatusLabel.config(text="Connected", fg="green")
+            print("Connected to Pi Zero 2")
+        except socket.error as e:
+            self.connectionStatusLabel.config(text=f"Error: {e}", fg="red")
+            print(f"Connection error: {e}")
+            self.sock = None
+
+    def send_command(self, command):
+        try:
+            if self.sock:
+                self.sock.sendall(command.encode())
+                print(f"Sent command: {command}")
+            else:
+                print("Socket not connected.")
+        except:
+            print("Socket error occurred while sending command.")
+    
     def on_key_press(self, event):
         """Handles key press events for movement control."""
         if event.char == 'w':
@@ -115,17 +201,6 @@ class GUI(tk.Tk):
         self.speed = new_speed
         print(f"Speed decreased to {self.speed}")
 
-    def send_command(self, command):
-        """Send a command to the robot."""
-        try:
-            if self.sock:
-                self.sock.sendall(command.encode())
-                print(f"Sent command: {command}")
-            else:
-                print("Socket not connected.")
-        except Exception as e:
-            print(f"Error sending command: {e}")
-    
     def on_close(self):
         """Handle closing the application."""
         self.stop_camera()
