@@ -41,13 +41,8 @@ class GUI(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.load_images_list()
 
-        # Initialize movement states dictionary to track WASD key presses
-        self.key_state = {
-            'w': False,
-            'a': False,
-            's': False,
-            'd': False
-        }
+        # Track pressed keys with a set (WASD)
+        self.pressed_keys = set()
         
         # Bind key events for movement and control
         self.bind("<KeyPress>", self.keyboard_input)  # When a key is pressed
@@ -165,15 +160,15 @@ class GUI(tk.Tk):
     
     def keyboard_input(self, event):
         if event.type == 'KeyPress':  # Key press event (KeyPress)
-            if event.char in self.key_state:
-                self.key_state[event.char] = True  # Mark key as pressed
+            if event.char in ['w', 'a', 's', 'd']:
+                self.pressed_keys.add(event.char)  # Mark key as pressed
                 self.handle_movement(event.char)
             else:
                 self.handle_special_keys(event)
 
         elif event.type == 'KeyRelease':  # Key release event (KeyRelease)
-            if event.char in self.key_state:
-                self.key_state[event.char] = False  # Mark key as released
+            if event.char in ['w', 'a', 's', 'd']:
+                self.pressed_keys.discard(event.char)  # Mark key as released
                 self.check_stop_movement()  # Check if robot should stop after key release
 
     def handle_movement(self, key):
@@ -202,9 +197,8 @@ class GUI(tk.Tk):
 
     def check_stop_movement(self):
         # If no key is pressed (WASD), stop the robot
-        if not any(self.key_state.values()):  # If all keys are released
+        if not self.pressed_keys:  # If the set of pressed keys is empty
             self.stop_movement()
-
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
