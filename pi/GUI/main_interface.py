@@ -166,7 +166,7 @@ class GUI(tk.Tk):
     def keyboard_input(self, event):
         """Handles key press and release events for movement control and special actions."""
         
-        if event.type == '1':  # Key press event (KeyPress)
+        if event.type == '2':  # Key press event (KeyPress)
             if event.char in self.key_state:
                 self.key_state[event.char] = True  # Mark key as pressed
                 self.handle_movement(event.char)
@@ -174,7 +174,7 @@ class GUI(tk.Tk):
                 # Handle special keys like space, Tab, Return, etc.
                 self.handle_special_keys(event)
     
-        elif event.type == '2':  # Key release event (KeyRelease)
+        elif event.type == '3':  # Key release event (KeyRelease)
             if event.char in self.key_state:
                 self.key_state[event.char] = False  # Mark key as released
                 self.check_stop_movement()  # Check if robot should stop after key release
