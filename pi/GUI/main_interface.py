@@ -42,7 +42,8 @@ class GUI(tk.Tk):
         self.load_images_list()
         
         # checking for user inputinput
-        self.bind("<Key>", self.keyboard_input)
+        self.bind("<KeyPress>", self.keyboard_input)
+        self.bind("<KeyRelease>", self.on_key_release)
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -184,6 +185,12 @@ class GUI(tk.Tk):
 
         if event.char == '-':
             self.decrease_speed()
+
+    def on_key_release(self, event):
+    """Handles key release events to stop movement when no keys are pressed."""
+        if event.char in ['w', 'a', 's', 'd']:
+            self.stop_movement()
+    
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
