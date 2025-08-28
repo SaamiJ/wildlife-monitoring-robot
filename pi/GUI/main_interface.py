@@ -33,7 +33,7 @@ class GUI(tk.Tk):
         self._running = False
         self._imgtk_cache = None
         self.imageDir = os.path.expanduser("pi/GUI/stored_image")
-        self.host = 'raspberrypi.local'
+        self.host = '172.20.10.5'
         self.port = 5000
 
         # calling layout window
