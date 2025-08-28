@@ -41,8 +41,9 @@ class GUI(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.load_images_list()
         
-        # checking for user inputinput
-        self.bind("<Key>", self.keyboard_input)
+        # checking for user input
+        self.bind("<KeyPress>", self.keyboard_input)   # This handles key press events
+        self.bind("<KeyRelease>", self.on_key_release)  # This handles key release events
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -185,13 +186,11 @@ class GUI(tk.Tk):
     
         if event.char == '-':
             self.decrease_speed()
-    
-        # Check if any of the WASD keys are released and stop movement
-        if event.type == '3':  # This indicates key release in tkinter
-            if event.char in ['w', 'a', 's', 'd']:
-                self.send_command('F000\n')  # Send the stop command (F000)
-                self.movementStatus.config(text="Idle")
-                print("Stopping movement")
+
+    def on_key_release(self, event):
+    if event.char in ['w', 'a', 's', 'd']:
+        self.send_command('F000\n')
+        self.movementStatus.config(text="Idle")
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
