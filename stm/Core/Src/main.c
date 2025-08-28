@@ -112,20 +112,20 @@ int main(void)
     switch (direction)
     {
         case 'F':  // Forward
-            Motor_SetSpeedLeft(pwm_value);  // Set left motor speed
-            Motor_SetSpeedRight(pwm_value); // Set right motor speed
+            Motor_SetSpeedLeft(pwm_value);  // Forward left motor for right turn
+            Motor_SetSpeedRight(-pwm_value); // Reverse right motor for right turn
             break;
         case 'B':  // Backward
+            Motor_SetSpeedLeft(-pwm_value);
+            Motor_SetSpeedRight(pwm_value);
+            break;
+        case 'L':  // Left
             Motor_SetSpeedLeft(-pwm_value); // Reverse left motor
             Motor_SetSpeedRight(-pwm_value); // Reverse right motor
             break;
-        case 'L':  // Left
-            Motor_SetSpeedLeft(-pwm_value); // Reverse left motor for left turn
-            Motor_SetSpeedRight(pwm_value); // Forward right motor for left turn
-            break;
         case 'R':  // Right
-            Motor_SetSpeedLeft(pwm_value);  // Forward left motor for right turn
-            Motor_SetSpeedRight(-pwm_value); // Reverse right motor for right turn
+            Motor_SetSpeedLeft(pwm_value);
+            Motor_SetSpeedRight(pwm_value);
             break;
         default:  // Stop all motors if direction is invalid or unrecognized
             Motor_StopAll();
