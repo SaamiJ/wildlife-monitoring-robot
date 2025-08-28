@@ -36,6 +36,11 @@ class GUI(tk.Tk):
         self.host = 'raspberrypi.local'
         self.port = 5000
 
+        # calling layout window
+        self.interface_layout()
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.load_images_list()
+
         # Initialize movement states dictionary to track WASD key presses
         self.key_state = {
             'w': False,
@@ -43,11 +48,6 @@ class GUI(tk.Tk):
             's': False,
             'd': False
         }
-
-        # calling layout window
-        self.interface_layout()
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.load_images_list()
         
         # Bind key events for movement and control
         self.bind("<KeyPress>", self.keyboard_input)  # When a key is pressed
@@ -164,23 +164,19 @@ class GUI(tk.Tk):
             print("Socket error occurred while sending command.")
     
     def keyboard_input(self, event):
-        """Handles key press and release events for movement control and special actions."""
-        
-        if event.type == '2':  # Key press event (KeyPress)
+        if event.type == 'KeyPress':  # Key press event (KeyPress)
             if event.char in self.key_state:
                 self.key_state[event.char] = True  # Mark key as pressed
                 self.handle_movement(event.char)
             else:
-                # Handle special keys like space, Tab, Return, etc.
                 self.handle_special_keys(event)
-    
-        elif event.type == '3':  # Key release event (KeyRelease)
+
+        elif event.type == 'KeyRelease':  # Key release event (KeyRelease)
             if event.char in self.key_state:
                 self.key_state[event.char] = False  # Mark key as released
                 self.check_stop_movement()  # Check if robot should stop after key release
-    
+
     def handle_movement(self, key):
-        """Handle movement logic based on key press."""
         if key == 'w':
             self.btn_forward.invoke()  # Simulate button press
         elif key == 's':
@@ -189,9 +185,8 @@ class GUI(tk.Tk):
             self.btn_left.invoke()
         elif key == 'd':
             self.btn_right.invoke()
-    
+
     def handle_special_keys(self, event):
-        """Handle special keys like space, Tab, Return, etc."""
         if event.keysym == "space": 
             self.btn_stop.invoke()  # Stop the robot
         elif event.keysym == "Tab":
@@ -204,12 +199,12 @@ class GUI(tk.Tk):
             self.increase_speed()  # Increase speed
         elif event.char == '-':
             self.decrease_speed()  # Decrease speed
-    
+
     def check_stop_movement(self):
-        """Stop the robot if no movement keys are pressed."""
         # If no key is pressed (WASD), stop the robot
         if not any(self.key_state.values()):  # If all keys are released
             self.stop_movement()
+
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
