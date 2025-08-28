@@ -42,8 +42,7 @@ class GUI(tk.Tk):
         self.load_images_list()
         
         # checking for user inputinput
-        self.bind("<KeyPress>", self.keyboard_input)
-        self.bind("<KeyRelease>", self.on_key_release)
+        self.bind("<Key>", self.keyboard_input)
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -156,40 +155,43 @@ class GUI(tk.Tk):
             print("Socket error occurred while sending command.")
     
     def keyboard_input(self, event):
+        # Check for key press actions (movement and controls)
         if event.char == 'w':
             self.btn_forward.invoke()  # Simulate button press
-
+    
         if event.char == 's':  
             self.btn_back.invoke()
-
+    
         if event.char == 'a':
             self.btn_left.invoke()
-
+    
         if event.char == 'd':
             self.btn_right.invoke()
-
+    
         if event.keysym == "space": 
             self.btn_stop.invoke()
         
         if event.keysym == "Tab":
             self.btn_start.invoke()
-
+    
         if event.keysym == "Return":
             self.btn_save_image.invoke()
-
+    
         if event.keysym == "Escape":
             self.on_close()
-
+    
         if event.char == '=':
             self.increase_speed()
-
+    
         if event.char == '-':
             self.decrease_speed()
-
-    def on_key_release(self, event):
-        if event.char in ['w', 'a', 's', 'd']:
-            self.stop_movement()
     
+        # Stop the movement if no direction key is pressed
+        if event.char not in ['w', 'a', 's', 'd']:  # If any of the movement keys are released
+            self.send_command('F000\n')  # Send the stop command (F000)
+            self.movementStatus.config(text="Idle")
+            print("Stopping movement")
+
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
