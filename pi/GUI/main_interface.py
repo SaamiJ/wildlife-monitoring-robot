@@ -164,7 +164,7 @@ class GUI(tk.Tk):
             print("Socket error occurred while sending command.")
     
     def keyboard_input(self, event):
-        if event.type == '3':  # Key release event (KeyRelease)
+        if event.type == '1':  # Key release event (KeyRelease)
             if event.char in self.key_state:
                 self.key_state[event.char] = False  # Mark key as released
                 self.check_stop_movement()  # Check if robot should stop
