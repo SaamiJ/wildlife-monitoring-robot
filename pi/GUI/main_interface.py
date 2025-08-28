@@ -10,11 +10,23 @@ import cv2
 import time
 import socket
 
+### Steps for running in Docker ### 
+# 1. Install VcXsrv (https://vcxsrv.com/)
+# 2. Start VcXsrv with the following options:
+#       - Choose Multiple windows
+#       - Set display number to 0
+#       - Enable "disable access conrol"
+#       - Click Next and Finish
+# 3. Navigate to the GUI directory
+# 4. Start Docker Desktop
+# 5. Run "docker pull saamij/wildlife-gui:latest"
+# 6. Run "docker run -e DISPLAY=host.docker.internal:0 --rm -v /tmp/.X11-unix:/tmp/.X11-unix wildlife-gui"
+
 class GUI(tk.Tk):
     def __init__(self, camera=0):
         super().__init__()
 
-        # Variable initialization
+        # Variable initializatio
         self.saved_image_count = 0
         self.cap = None
         self.camera_index = camera
@@ -24,19 +36,14 @@ class GUI(tk.Tk):
         self.host = 'raspberrypi.local'
         self.port = 5000
 
-        # Movement control variables
-        self.speed = 500  # Initial speed
-        self.prev_dir = None  # 'F', 'B', 'L', 'R', or None (idle)
-
         # calling layout window
         self.interface_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.load_images_list()
-
-        # Bind key events for movement and control
-        self.bind("<KeyPress>", self.on_key_press)
-        self.bind("<KeyRelease>", self.on_key_release)
-
+        
+        # checking for user inputinput
+        self.bind("<Key>", self.keyboard_input)
+        
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
         self.config(bg="white")
@@ -48,7 +55,7 @@ class GUI(tk.Tk):
         self.videoLabel = tk.Label(self.videoFrame, text="Camera Video", bg="lightgray")
         self.videoLabel.grid(row=0, column=0, sticky="nw")
 
-        # all the status area
+        #all the status area
         self.fpsFrame = tk.Frame(self, width=120, height=150, bg="white")
         self.fpsFrame.grid(row=0, column=3, sticky="e", padx=10, pady=10)
         self.fpsLabel = tk.Label(self.fpsFrame, text="FPS\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
@@ -69,6 +76,20 @@ class GUI(tk.Tk):
         self.movementStatus.grid(row=2, column=0, sticky="s")
         self.connectButton = ttk.Button(self.connectionStatusFrame, text="Connect", command=self.connection_setup, width=7)
         self.connectButton.grid(row=3, column=0, padx=5, pady=5)
+
+
+        # list of saved images
+        self.statusFrame = tk.Frame(self, width=300, height=370, bg="white")
+        self.statusFrame.grid(row=1, column=3, rowspan=2, columnspan=2, sticky="w", padx=10, pady=10)
+        self.statusFrame.grid_propagate(False)
+        self.statusLabel = tk.Label(self.statusFrame, text="Saved Images:", bg="white", fg="black", font=("Arial", 22, "bold"))
+        self.statusLabel.grid(row=0, column=0, sticky="nw", pady=10)
+        self.imgList = tk.Listbox(self.statusFrame, activestyle="underline", width=23, height=10, bg="white", fg="black", font=("Arial", 20, "bold"),selectbackground="lightblue", selectforeground="black")
+        self.imgList.grid(row=1, column=0, sticky="w")
+        self.imgScroll = tk.Scrollbar(self.statusFrame, orient="vertical", command=self.imgList.yview)
+        self.imgScroll.grid(row=1, column=1, sticky="ns", pady=8)
+        self.imgList.config(yscrollcommand=self.imgScroll.set)
+        self.imgList.bind("<Double-1>", self.open_selected_image)
 
         # Speed Scroll
         self.speedFrame = tk.Frame(self, width=300, height=180, bg="white")
@@ -123,113 +144,91 @@ class GUI(tk.Tk):
     def send_command(self, command):
         try:
             if self.sock:
-                self.sock.sendall(command.encode())
-                print(f"Sent command: {command}")
+                try:
+                    self.sock.sendall(command.encode())
+                    print(f"Sent command: {command}")
+                except socket.error as e:
+                    print(f"Error sending command: {e}")
             else:
                 print("Socket not connected.")
         except:
             print("Socket error occurred while sending command.")
     
-    def on_key_press(self, event):
-        """Handles key press events for movement control."""
+    def keyboard_input(self, event):
         if event.char == 'w':
-            self.move_forward()
-        elif event.char == 's':
-            self.move_backward()
-        elif event.char == 'a':
-            self.turn_left()
-        elif event.char == 'd':
-            self.turn_right()
-        elif event.char == '+':
-            self.increase_speed()
-        elif event.char == '-':
-            self.decrease_speed()
-        elif event.char == ' ':
-            self.stop_movement()
+            self.btn_forward.invoke()  # Simulate button press
 
-    def on_key_release(self, event):
-        """Handles key release events to stop movement when no keys are pressed."""
-        if event.char in ['w', 'a', 's', 'd']:
-            self.stop_movement()
+        if event.char == 's':  
+            self.btn_back.invoke()
+
+        if event.char == 'a':
+            self.btn_left.invoke()
+
+        if event.char == 'd':
+            self.btn_right.invoke()
+
+        if event.keysym == "space": 
+            self.btn_stop.invoke()
+        
+        if event.keysym == "Tab":
+            self.btn_start.invoke()
+
+        if event.keysym == "Return":
+            self.btn_save_image.invoke()
+
+        if event.keysym == "Escape":
+            self.on_close()
+
+        if event.char == '=':
+            self.increase_speed()
+
+        if event.char == '-':
+            self.decrease_speed()
+
+    def increase_speed(self):
+        current_speed = self.speedSlider.get()
+        new_speed = min(current_speed + 50, 999)
+        self.speedSlider.set(new_speed)
+
+    
+    def decrease_speed(self):
+        current_speed = self.speedSlider.get()
+        new_speed = max(current_speed - 50, 300)
+        self.speedSlider.set(new_speed)
 
     def move_forward(self):
-        """Send forward command to robot."""
-        self.send_command(f'F{self.speed}\n')
-        self.prev_dir = 'F'
-        self.movementStatus.config(text="Moving Forward")
+        self.send_command(f'F{self.speedSlider.get()}\n')
+        self.movementStatus.config(text="Forward")
+        self.btn_forward.config(bg="lightgreen")
         print("Moving forward")
-
+    
     def move_backward(self):
-        """Send backward command to robot."""
-        self.send_command(f'B{self.speed}\n')
-        self.prev_dir = 'B'
-        self.movementStatus.config(text="Moving Backward")
-        print("Moving backward")
+        self.send_command(f'B{self.speedSlider.get()}\n')
+        self.movementStatus.config(text="Backward")
+        self.btn_back.config(bg="lightgreen")
+        print("Moving backward")  
 
     def turn_left(self):
-        """Send left turn command to robot."""
-        self.send_command(f'L{self.speed}\n')
-        self.prev_dir = 'L'
-        self.movementStatus.config(text="Turning Left")
+        self.send_command(f'L{self.speedSlider.get()}\n')
+        self.movementStatus.config(text="Left")
+        self.btn_left.config(bg="lightgreen")
         print("Turning left")
 
     def turn_right(self):
-        """Send right turn command to robot."""
-        self.send_command(f'R{self.speed}\n')
-        self.prev_dir = 'R'
-        self.movementStatus.config(text="Turning Right")
+        self.send_command(f'R{self.speedSlider.get()}\n')
+        self.movementStatus.config(text="Right")
+        self.btn_right.config(bg="lightgreen")
         print("Turning right")
 
     def stop_movement(self):
-        """Stop the robot."""
-        self.send_command('F000\n')  # Send stop command with 0 speed (F000)
-        self.prev_dir = None
+        self.send_command('STOP\n')
         self.movementStatus.config(text="Idle")
         print("Stopping movement")
 
-    def increase_speed(self):
-        """Increase the robot's speed."""
-        current_speed = self.speed
-        new_speed = min(current_speed + 50, 999)
-        self.speed = new_speed
-        print(f"Speed increased to {self.speed}")
-
-    def decrease_speed(self):
-        """Decrease the robot's speed."""
-        current_speed = self.speed
-        new_speed = max(current_speed - 50, 0)
-        self.speed = new_speed
-        print(f"Speed decreased to {self.speed}")
-
-    def on_close(self):
-        """Handle closing the application."""
-        self.stop_camera()
-        self.destroy()
-        if self.sock:
-            try:
-                self.sock.sendall(b'STOP\n')  # Send stop command when closing
-            except socket.error as e:
-                print(f"Error sending stop command: {e}")
-            self.sock.close()
-            self.sock = None    
-
-    def load_images_list(self):
-        """Load the list of saved images."""
-        exts = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff")
-        try:
-            names = [f for f in os.listdir(self.imageDir) if f.lower().endswith(exts)]
-        except FileNotFoundError:
-            names = []
-        names.sort()
-        self._img_files = [os.path.join(self.imageDir, f) for f in names]
-        self.imgList.delete(0, tk.END)
-        for name in names:
-            self.imgList.insert(tk.END, name)
-
     def start(self):
-        """Start the camera feed."""
         if self._running:
             return
+        # Open camera (0 = default webcam). For a network stream use a URL instead.
         self.cap = cv2.VideoCapture(self.camera_index)
         if not self.cap.isOpened():
             messagebox.showerror("Error", "Could not open camera/stream.")
@@ -238,20 +237,22 @@ class GUI(tk.Tk):
         self.after(0, self.update_frame)
 
     def stop_camera(self):
-        """Stop the camera feed."""
         self._running = False
         if self.cap:
             self.cap.release()
             self.cap = None
 
     def update_frame(self):
-        """Update the video frame."""
         if not self._running or not self.cap:
             return
 
         ok, frame = self.cap.read()
+        frameStartTime = time.time()
         if ok:
+            # BGR -> RGB
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+            # Fit to label while keeping aspect ratio
             h, w, _ = frame.shape
             Lw = self.videoFrame.winfo_width() or 1
             Lh = self.videoFrame.winfo_height() or 1
@@ -263,12 +264,74 @@ class GUI(tk.Tk):
             self._imgtk_cache = ImageTk.PhotoImage(image=img)
             self.videoLabel.configure(image=self._imgtk_cache)
         else:
+            # Try to recover on read failures
             self.stop_camera()
             self.start()
             return
         
+        frameEndTime = time.time()
+        timeDifference = frameEndTime - frameStartTime
+        fps = 1 / timeDifference if timeDifference > 0 else 0
+        self.fpsLabel.config(text=f"FPS: \t {fps:.1f}")
+
+        # Schedule next frame (~30–33 ms ≈ 30 FPS)
         self.after(30, self.update_frame)
 
+    def save_image(self):
+        if not self.cap:
+            messagebox.showinfo("Info", "Start the camera first.")
+            return
+        ok, frame = self.cap.read()
+        if not ok:
+            messagebox.showerror("Error", "Failed to capture frame.")
+            return
+        filename = f"pi/GUI/stored_image/image_{self.saved_image_count}.png"
+        self.saved_image_count += 1
+        cv2.imwrite(filename, frame)
+        self.load_images_list()
+
+    def on_close(self):
+        self.stop_camera()
+        self.destroy()
+        if self.sock:
+            try:
+                self.sock.sendall(b'STOP\n')  # Send stop command
+            except socket.error as e:
+                print(f"Error sending stop command: {e}")
+            self.sock.close()
+            self.sock = None    
+
+    
+    
+    def load_images_list(self):
+        exts = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff")
+        try:
+            names = [f for f in os.listdir(self.imageDir) if f.lower().endswith(exts)]
+        except FileNotFoundError:
+            names = []
+        names.sort()
+        self._img_files = [os.path.join(self.imageDir, f) for f in names]
+        self.imgList.delete(0, tk.END)
+        for name in names:
+            self.imgList.insert(tk.END, name)
+
+    def open_selected_image(self, event=None):
+        sel = self.imgList.curselection()
+        if not sel:
+            return
+        path = self._img_files[sel[0]]
+        try:
+            if sys.platform.startswith("win"):
+                os.startfile(path)  # type: ignore[attr-defined]
+            elif sys.platform == "darwin":
+                subprocess.run(["open", path], check=False)
+            else:
+                subprocess.run(["xdg-open", path], check=False)
+        except Exception as e:
+            tk.messagebox.showerror("Open failed", f"Could not open:\n{path}\n\n{e}")
+
 if __name__ == "__main__":
+    # For a network stream (e.g., MJPEG from Pi), replace camera=0 with:
+    # camera="http://<PI_IP>:8080/?action=stream"
     app = GUI(camera=0)
     app.mainloop()
