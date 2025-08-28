@@ -95,7 +95,7 @@ class GUI(tk.Tk):
         self.speedFrame = tk.Frame(self, width=300, height=180, bg="white")
         self.speedFrame.grid(row=3, column=3, columnspan=2, sticky="nw", padx=10, pady=10)
         self.speedSlider = tk.Scale(
-            self.speedFrame, from_=0, to=100, orient=tk.HORIZONTAL,
+            self.speedFrame, from_=300, to=999, orient=tk.HORIZONTAL,
             label="Speed Control", bg="white", fg="black",
             font=("Arial", 16, "bold"), length=280
         )
@@ -187,13 +187,13 @@ class GUI(tk.Tk):
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
-        new_speed = min(current_speed + 10, 100)
+        new_speed = min(current_speed + 50, 999)
         self.speedSlider.set(new_speed)
 
     
     def decrease_speed(self):
         current_speed = self.speedSlider.get()
-        new_speed = max(current_speed - 10, 0)
+        new_speed = max(current_speed - 50, 300)
         self.speedSlider.set(new_speed)
 
     def move_forward(self):
