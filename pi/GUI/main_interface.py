@@ -186,12 +186,12 @@ class GUI(tk.Tk):
         if event.char == '-':
             self.decrease_speed()
     
-        # Stop the movement if no direction key is pressed
-        if event.char not in ['w', 'a', 's', 'd']:  # If any of the movement keys are released
-            self.send_command('F000\n')  # Send the stop command (F000)
-            self.movementStatus.config(text="Idle")
-            print("Stopping movement")
-
+        # Check if any of the WASD keys are released and stop movement
+        if event.type == '2':  # This indicates key release in tkinter
+            if event.char in ['w', 'a', 's', 'd']:
+                self.send_command('F000\n')  # Send the stop command (F000)
+                self.movementStatus.config(text="Idle")
+                print("Stopping movement")
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
