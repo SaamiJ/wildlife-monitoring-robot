@@ -187,7 +187,7 @@ class GUI(tk.Tk):
             self.decrease_speed()
     
         # Check if any of the WASD keys are released and stop movement
-        if event.type == '2':  # This indicates key release in tkinter
+        if event.type == '3':  # This indicates key release in tkinter
             if event.char in ['w', 'a', 's', 'd']:
                 self.send_command('F000\n')  # Send the stop command (F000)
                 self.movementStatus.config(text="Idle")
