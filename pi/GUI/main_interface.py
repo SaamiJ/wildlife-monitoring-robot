@@ -162,7 +162,6 @@ class GUI(tk.Tk):
         if event.type == '2':  # Key press event (KeyPress)
             if event.char in ['w', 'a', 's', 'd']:
                 self.pressed_keys.add(event.char)  # Mark key as pressed
-                print("KEY PRESSED")
                 self.handle_movement(event.char)
             else:
                 self.handle_special_keys(event)
@@ -171,10 +170,6 @@ class GUI(tk.Tk):
             self.send_command('F000\n')
             self.prev_dir = None
             self.movementStatus.config(text="Idle")
-            if event.char in ['w', 'a', 's', 'd']:
-                self.pressed_keys.discard(event.char)  # Mark key as released
-                print("KEY RELEASED PT2")
-                self.check_stop_movement()  # Check if robot should stop after key release
 
     def handle_movement(self, key):
         if key == 'w':
@@ -199,11 +194,6 @@ class GUI(tk.Tk):
             self.increase_speed()  # Increase speed
         elif event.char == '-':
             self.decrease_speed()  # Decrease speed
-
-    def check_stop_movement(self):
-        # If no key is pressed (WASD), stop the robot
-        if not self.pressed_keys:  # If the set of pressed keys is empty
-            self.stop_movement()
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
