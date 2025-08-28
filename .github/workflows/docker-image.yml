@@ -21,7 +21,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build Docker image
-      run: docker build -t saamij/wildlife-gui:latest /pi/GUI
+      run: docker build -t saamij/wildlife-gui:latest pi/GUI
 
     - name: Push Docker image
       run: docker push saamij/wildlife-gui:latest
