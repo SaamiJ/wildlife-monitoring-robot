@@ -43,7 +43,7 @@ class GUI(tk.Tk):
         
         # checking for user input
         self.bind("<KeyPress>", self.keyboard_input)   # This handles key press events
-        self.bind("<KeyRelease>", self.on_key_release)  # This handles key release events
+        self.bind("<KeyRelease>", self.keyboard_input)  # This handles key release events
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -156,41 +156,31 @@ class GUI(tk.Tk):
             print("Socket error occurred while sending command.")
     
     def keyboard_input(self, event):
-        # Check for key press actions (movement and controls)
-        if event.char == 'w':
-            self.btn_forward.invoke()  # Simulate button press
+        if event.type == '2':  # Key release event (KeyRelease)
+            if event.char in ['w', 'a', 's', 'd']:
+                self.stop_movement()  # Stop robot when any of the movement keys are released
     
-        if event.char == 's':  
-            self.btn_back.invoke()
-    
-        if event.char == 'a':
-            self.btn_left.invoke()
-    
-        if event.char == 'd':
-            self.btn_right.invoke()
-    
-        if event.keysym == "space": 
-            self.btn_stop.invoke()
-        
-        if event.keysym == "Tab":
-            self.btn_start.invoke()
-    
-        if event.keysym == "Return":
-            self.btn_save_image.invoke()
-    
-        if event.keysym == "Escape":
-            self.on_close()
-    
-        if event.char == '=':
-            self.increase_speed()
-    
-        if event.char == '-':
-            self.decrease_speed()
-
-    def on_key_release(self, event):
-        if event.char in ['w', 'a', 's', 'd']:
-            self.send_command('F000\n')
-            self.movementStatus.config(text="Idle")
+        elif event.type == '1':  # Key press event (KeyPress)
+            if event.char == 'w':
+                self.btn_forward.invoke()  # Simulate button press
+            if event.char == 's':  
+                self.btn_back.invoke()
+            if event.char == 'a':
+                self.btn_left.invoke()
+            if event.char == 'd':
+                self.btn_right.invoke()
+            if event.keysym == "space": 
+                self.btn_stop.invoke()
+            if event.keysym == "Tab":
+                self.btn_start.invoke()
+            if event.keysym == "Return":
+                self.btn_save_image.invoke()
+            if event.keysym == "Escape":
+                self.on_close()
+            if event.char == '=':
+                self.increase_speed()
+            if event.char == '-':
+                self.decrease_speed()
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
