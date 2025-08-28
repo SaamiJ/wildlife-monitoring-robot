@@ -168,7 +168,9 @@ class GUI(tk.Tk):
                 self.handle_special_keys(event)
 
         elif event.type == '3':  # Key release event (KeyRelease)
-            print("KEY RELEASED PT1")
+            self.send_command('F000\n')
+            self.prev_dir = None
+            self.movementStatus.config(text="Idle")
             if event.char in ['w', 'a', 's', 'd']:
                 self.pressed_keys.discard(event.char)  # Mark key as released
                 print("KEY RELEASED PT2")
