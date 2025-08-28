@@ -188,9 +188,9 @@ class GUI(tk.Tk):
             self.decrease_speed()
 
     def on_key_release(self, event):
-    if event.char in ['w', 'a', 's', 'd']:
-        self.send_command('F000\n')
-        self.movementStatus.config(text="Idle")
+        if event.char in ['w', 'a', 's', 'd']:
+            self.send_command('F000\n')
+            self.movementStatus.config(text="Idle")
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
