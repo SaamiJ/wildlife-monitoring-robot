@@ -36,14 +36,22 @@ class GUI(tk.Tk):
         self.host = 'raspberrypi.local'
         self.port = 5000
 
+        # Initialize movement states dictionary to track WASD key presses
+        self.key_state = {
+            'w': False,
+            'a': False,
+            's': False,
+            'd': False
+        }
+
         # calling layout window
         self.interface_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.load_images_list()
         
-        # checking for user input
-        self.bind("<KeyPress>", self.keyboard_input)   # This handles key press events
-        self.bind("<KeyRelease>", self.keyboard_input)  # This handles key release events
+        # Bind key events for movement and control
+        self.bind("<KeyPress>", self.keyboard_input)  # When a key is pressed
+        self.bind("<KeyRelease>", self.keyboard_input)  # When a key is released
         
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
@@ -156,31 +164,46 @@ class GUI(tk.Tk):
             print("Socket error occurred while sending command.")
     
     def keyboard_input(self, event):
-        if event.type == '3':  # Key release event (KeyRelease)
-            if event.char in ['w', 'a', 's', 'd']:
-                self.stop_movement()  # Stop robot when any of the movement keys are released
-    
-        elif event.type == '2':  # Key press event (KeyPress)
-            if event.char == 'w':
-                self.btn_forward.invoke()  # Simulate button press
-            if event.char == 's':  
-                self.btn_back.invoke()
-            if event.char == 'a':
-                self.btn_left.invoke()
-            if event.char == 'd':
-                self.btn_right.invoke()
-            if event.keysym == "space": 
-                self.btn_stop.invoke()
-            if event.keysym == "Tab":
-                self.btn_start.invoke()
-            if event.keysym == "Return":
-                self.btn_save_image.invoke()
-            if event.keysym == "Escape":
-                self.on_close()
-            if event.char == '=':
-                self.increase_speed()
-            if event.char == '-':
-                self.decrease_speed()
+        if event.type == '2':  # Key release event (KeyRelease)
+            if event.char in self.key_state:
+                self.key_state[event.char] = False  # Mark key as released
+                self.check_stop_movement()  # Check if robot should stop
+        elif event.type == '1':  # Key press event (KeyPress)
+            if event.char in self.key_state:
+                self.key_state[event.char] = True  # Mark key as pressed
+                self.handle_movement(event.char)
+            else:
+                # Handle special keys like space, Tab, Return, etc.
+                self.handle_special_keys(event)
+
+    def handle_movement(self, key):
+        if key == 'w':
+            self.btn_forward.invoke()  # Simulate button press
+        elif key == 's':
+            self.btn_back.invoke()
+        elif key == 'a':
+            self.btn_left.invoke()
+        elif key == 'd':
+            self.btn_right.invoke()
+
+    def handle_special_keys(self, event):
+        if event.keysym == "space": 
+            self.btn_stop.invoke()  # Stop the robot
+        elif event.keysym == "Tab":
+            self.btn_start.invoke()  # Start the camera
+        elif event.keysym == "Return":
+            self.btn_save_image.invoke()  # Save the image
+        elif event.keysym == "Escape":
+            self.on_close()  # Close the application
+        elif event.char == '=':
+            self.increase_speed()  # Increase speed
+        elif event.char == '-':
+            self.decrease_speed()  # Decrease speed
+
+    def check_stop_movement(self):
+        # If no key is pressed (WASD), stop the robot
+        if not any(self.key_state.values()):  # If all keys are released
+            self.stop_movement()
 
     def increase_speed(self):
         current_speed = self.speedSlider.get()
@@ -218,9 +241,9 @@ class GUI(tk.Tk):
         print("Turning right")
 
     def stop_movement(self):
-        self.send_command('STOP\n')
+        self.send_command('F000\n')
+        self.prev_dir = None
         self.movementStatus.config(text="Idle")
-        print("Stopping movement")
 
     def start(self):
         if self._running:
