@@ -21,9 +21,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build Docker image
-      run: |
-        IMAGE_TAG=latest
-        docker build -f pi/GUI/Dockerfile -t saamij/wildlife-gui:$IMAGE_TAG pi/GUI
+      run: docker build -t saamij/wildlife-gui:latest
 
     - name: Push Docker image
       run: docker push saamij/wildlife-gui:latest
