@@ -26,7 +26,7 @@ class GUI(tk.Tk):
     def __init__(self, camera=0):
         super().__init__()
 
-        # Variable initializatio
+        # Variable initialization
         self.saved_image_count = 0
         self.cap = None
         self.camera_index = camera
@@ -35,15 +35,17 @@ class GUI(tk.Tk):
         self.imageDir = os.path.expanduser("pi/GUI/stored_image")
         self.host = 'raspberrypi.local'
         self.port = 5000
+        self.key_state = {'w': False, 'a': False, 's': False, 'd': False}
 
         # calling layout window
         self.interface_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.load_images_list()
-        
-        # checking for user inputinput
-        self.bind("<Key>", self.keyboard_input)
-        
+
+        # checking for user input
+        self.bind("<KeyPress>", self.keyboard_input_press)
+        self.bind("<KeyRelease>", self.keyboard_input_release)
+
     def interface_layout(self):
         self.title("Wildlife Monitoring Robot Interface")
         self.config(bg="white")
@@ -55,7 +57,7 @@ class GUI(tk.Tk):
         self.videoLabel = tk.Label(self.videoFrame, text="Camera Video", bg="lightgray")
         self.videoLabel.grid(row=0, column=0, sticky="nw")
 
-        #all the status area
+        # all the status area
         self.fpsFrame = tk.Frame(self, width=120, height=150, bg="white")
         self.fpsFrame.grid(row=0, column=3, sticky="e", padx=10, pady=10)
         self.fpsLabel = tk.Label(self.fpsFrame, text="FPS\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
@@ -76,7 +78,6 @@ class GUI(tk.Tk):
         self.movementStatus.grid(row=2, column=0, sticky="s")
         self.connectButton = ttk.Button(self.connectionStatusFrame, text="Connect", command=self.connection_setup, width=7)
         self.connectButton.grid(row=3, column=0, padx=5, pady=5)
-
 
         # list of saved images
         self.statusFrame = tk.Frame(self, width=300, height=370, bg="white")
@@ -154,71 +155,69 @@ class GUI(tk.Tk):
         except:
             print("Socket error occurred while sending command.")
     
-    def keyboard_input(self, event):
-        if event.char == 'w':
-            self.btn_forward.invoke()  # Simulate button press
+    def keyboard_input_press(self, event):
+        """ Called when a key is pressed down. """
+        if event.char == 'w' and not self.key_state['w']:
+            self.key_state['w'] = True
+            self.move_forward()
 
-        if event.char == 's':  
-            self.btn_back.invoke()
+        if event.char == 's' and not self.key_state['s']:
+            self.key_state['s'] = True
+            self.move_backward()
 
-        if event.char == 'a':
-            self.btn_left.invoke()
+        if event.char == 'a' and not self.key_state['a']:
+            self.key_state['a'] = True
+            self.turn_left()
 
-        if event.char == 'd':
-            self.btn_right.invoke()
+        if event.char == 'd' and not self.key_state['d']:
+            self.key_state['d'] = True
+            self.turn_right()
 
-        if event.keysym == "space": 
-            self.btn_stop.invoke()
-        
-        if event.keysym == "Tab":
-            self.btn_start.invoke()
+    def keyboard_input_release(self, event):
+        """ Called when a key is released. """
+        if event.char == 'w' and self.key_state['w']:
+            self.key_state['w'] = False
+            self.stop_movement()
 
-        if event.keysym == "Return":
-            self.btn_save_image.invoke()
+        if event.char == 's' and self.key_state['s']:
+            self.key_state['s'] = False
+            self.stop_movement()
 
-        if event.keysym == "Escape":
-            self.on_close()
+        if event.char == 'a' and self.key_state['a']:
+            self.key_state['a'] = False
+            self.stop_movement()
 
-        if event.char == '=':
-            self.increase_speed()
-
-        if event.char == '-':
-            self.decrease_speed()
-
-    def increase_speed(self):
-        current_speed = self.speedSlider.get()
-        new_speed = min(current_speed + 50, 999)
-        self.speedSlider.set(new_speed)
-
-    
-    def decrease_speed(self):
-        current_speed = self.speedSlider.get()
-        new_speed = max(current_speed - 50, 300)
-        self.speedSlider.set(new_speed)
+        if event.char == 'd' and self.key_state['d']:
+            self.key_state['d'] = False
+            self.stop_movement()
 
     def move_forward(self):
-        self.send_command(f'F{self.speedSlider.get()}\n')
-        self.movementStatus.config(text="Forward")
-        self.btn_forward.config(bg="lightgreen")
-        print("Moving forward")
-    
+        if self.key_state['w']:
+            self.send_command(f'F{self.speedSlider.get()}\n')
+            self.movementStatus.config(text="Forward")
+            self.btn_forward.config(bg="lightgreen")
+            print("Moving forward")
+
     def move_backward(self):
-        self.send_command(f'B{self.speedSlider.get()}\n')
-        self.movementStatus.config(text="Backward")
-        self.btn_back.config(bg="lightgreen")
-        print("Moving backward")  
+        if self.key_state['s']:
+            self.send_command(f'B{self.speedSlider.get()}\n')
+            self.movementStatus.config(text="Backward")
+            self.btn_back.config(bg="lightgreen")
+            print("Moving backward")
 
     def turn_left(self):
-        self.send_command(f'L{self.speedSlider.get()}\n')
-        self.movementStatus.config(text="Left")
-        self.btn_left.config(bg="lightgreen")
-        print("Turning left")
+        if self.key_state['a']:
+            self.send_command(f'L{self.speedSlider.get()}\n')
+            self.movementStatus.config(text="Left")
+            self.btn_left.config(bg="lightgreen")
+            print("Turning left")
 
     def turn_right(self):
-        self.send_command(f'R{self.speedSlider.get()}\n')
-        self.movementStatus.config(text="Right")
-        self.btn_right.config(bg="lightgreen")
-        print("Turning right")
+        if self.key_state['d']:
+            self.send_command(f'R{self.speedSlider.get()}\n')
+            self.movementStatus.config(text="Right")
+            self.btn_right.config(bg="lightgreen")
+            print("Turning right")
 
     def stop_movement(self):
         self.send_command('STOP\n')
@@ -301,8 +300,6 @@ class GUI(tk.Tk):
             self.sock.close()
             self.sock = None    
 
-    
-    
     def load_images_list(self):
         exts = (".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff")
         try:
