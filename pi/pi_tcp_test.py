@@ -1,6 +1,8 @@
 import socket
 import serial
 import sys
+import time
+from gpiozero import LED
 
 # ---------- UART setup ----------
 def open_serial():
@@ -18,6 +20,16 @@ def main():
     PORT = 5000
 
     ser = None
+
+    # Toggle NRST on STM32 to boot and run the code
+    led = LED(4)
+    led.on()
+    time.sleep(0.5)
+    led.off()
+    time.sleep(0.5)
+    led.on()
+    time.sleep(0.5)
+
     try:
         ser = open_serial()
         print("[UART] Opened /dev/ttyS0 @115200")
