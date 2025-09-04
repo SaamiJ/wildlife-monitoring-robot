@@ -33,8 +33,9 @@ class GUI(tk.Tk):
         self._running = False
         self._imgtk_cache = None
         self.imageDir = os.path.expanduser("pi/GUI/stored_image")
-        self.host = '172.20.10.5'
+        self.host = 'raspberrypi.local'  # Change to your Pi's hostname or IP address
         self.port = 5000
+        self.power = 0.006  # Initial power variable
 
         # calling layout window
         self.interface_layout()
@@ -64,9 +65,9 @@ class GUI(tk.Tk):
         self.fpsFrame.grid(row=0, column=3, sticky="e", padx=10, pady=10)
         self.fpsLabel = tk.Label(self.fpsFrame, text="FPS\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
         self.fpsLabel.grid(row=0, column=0, sticky="nw", pady=20)
-        self.leftWheelLabel = tk.Label(self.fpsFrame, text="Left Wheel (rpm)\t: ", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.leftWheelLabel = tk.Label(self.fpsFrame, text="Left Wheel (rpm)\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
         self.leftWheelLabel.grid(row=1, column=0, sticky="w", pady=5)
-        self.rightWheelLabel = tk.Label(self.fpsFrame, text="Right Whee (rpm)\t: ", bg="white", fg="black", font=("Arial", 14, "bold"))
+        self.rightWheelLabel = tk.Label(self.fpsFrame, text="Right Whee (rpm)\t: 0", bg="white", fg="black", font=("Arial", 14, "bold"))
         self.rightWheelLabel.grid(row=2, column=0, sticky="w", pady=5)
 
         # info area
@@ -210,28 +211,44 @@ class GUI(tk.Tk):
         self.send_command(f'F{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Forward")
         self.btn_forward.config(bg="lightgreen")
+        rightWheelRPM =  160 * (self.speedSlider.get() / 999)
+        leftWheelRPM = 160 * (self.speedSlider.get() / 999)
+        self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: {rightWheelRPM:.1f}")
+        self.leftWheelLabel.config(text=f"Left Wheel (rpm)\t: {leftWheelRPM:.1f}")
         print("Moving forward")
     
     def move_backward(self):
         self.send_command(f'B{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Backward")
         self.btn_back.config(bg="lightgreen")
+        rightWheelRPM = -160 * (self.speedSlider.get() / 999)
+        leftWheelRPM = -160 * (self.speedSlider.get() / 999)
+        self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: -{rightWheelRPM:.1f}")
+        self.leftWheelLabel.config(text=f"Left Wheel (rpm)\t: -{leftWheelRPM:.1f}")
         print("Moving backward")  
 
     def turn_left(self):
         self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
         self.btn_left.config(bg="lightgreen")
+        rightWheelRPM = 160 * (self.speedSlider.get() / 999)
+        leftWheelRPM = -160 * (self.speedSlider.get() / 999)
+        self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: {rightWheelRPM:.1f}")
+        self.leftWheelLabel.config(text=f"Left Wheel (rpm)\t: -{leftWheelRPM:.1f}")
         print("Turning left")
 
     def turn_right(self):
         self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
         self.btn_right.config(bg="lightgreen")
+        rightWheelRPM = -160 * (self.speedSlider.get() / 999)
+        leftWheelRPM = 160 * (self.speedSlider.get() / 999)
+        self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: -{rightWheelRPM:.1f}")
+        self.leftWheelLabel.config(text=f"Left Wheel (rpm)\t: {leftWheelRPM:.1f}")
         print("Turning right")
 
     def stop_movement(self):
-        self.send_command('F000\n')
+        self.send_command('I000\n')
         self.prev_dir = None
         self.movementStatus.config(text="Idle")
 
