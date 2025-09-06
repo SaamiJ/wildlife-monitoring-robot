@@ -1,157 +1,158 @@
 #!/usr/bin/env python3
-"""
-USB Camera TCP Streaming Server (DFRobot / UVC) for Raspberry Pi Zero 2 W
-
-Protocol:
-  [4-byte big-endian length][JPEG frame bytes] repeated
-
-Usage (defaults to /dev/video0 @ 1280x720 15fps):
-  python3 video_stream_test.py --port 8000
-  # or specify device/resolution/fps/quality:
-  python3 video_stream_test.py --device /dev/video0 --width 1280 --height 720 --fps 15 --quality 80
-"""
+# Low-latency USB UVC camera streamer for Pi Zero 2 W
+# Protocol: [4-byte big-endian length][JPEG bytes] repeated.
 
 import argparse
 import socket
 import struct
 import sys
+import threading
 import time
+from queue import Queue, Full, Empty
 
 import cv2
 
-
 def open_usb_camera(device: str, width: int, height: int, fps: int) -> cv2.VideoCapture:
-    """
-    Open a UVC camera via V4L2 and request MJPEG for lower CPU on the Pi Zero 2 W.
-    """
     cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
-
-    # Request MJPEG stream from the camera (much cheaper to encode/decode)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, float(width))
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, float(height))
     cap.set(cv2.CAP_PROP_FPS, float(fps))
 
-    # Give the sensor a moment and pull a couple frames to settle exposure
-    warmup_deadline = time.time() + 2.0
+    t0 = time.time()
     ok = False
-    while time.time() < warmup_deadline:
+    while time.time() - t0 < 2.0:
         ok, _ = cap.read()
         if ok:
             break
-
     if not ok or not cap.isOpened():
         cap.release()
-        raise RuntimeError(
-            f"Failed to open camera '{device}' with requested settings {width}x{height}@{fps}fps"
-        )
+        raise RuntimeError(f"Failed to open {device} at {width}x{height}@{fps}")
 
-    # Log effective settings (camera may clamp)
     eff_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     eff_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     eff_fps = cap.get(cv2.CAP_PROP_FPS)
     fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
-    fourcc_str = "".join([chr((fourcc >> 8 * i) & 0xFF) for i in range(4)])
-    print(
-        f"Camera opened: {device}  {eff_w}x{eff_h} @{eff_fps:.1f}fps  FOURCC={fourcc_str}"
-    )
+    fourcc_str = "".join([chr((fourcc >> (8*i)) & 0xFF) for i in range(4)])
+    print(f"Camera: {device}  {eff_w}x{eff_h} @{eff_fps:.1f}  FOURCC={fourcc_str}")
     return cap
 
+def producer(cap: cv2.VideoCapture, q: Queue, jpeg_quality: int, target_fps: float):
+    enc_params = [int(cv2.IMWRITE_JPEG_QUALITY), int(jpeg_quality)]
+    frame_interval = 1.0 / max(1.0, target_fps)
+    next_deadline = time.perf_counter()
 
-def video_streaming_server(
-    host: str = "",
-    port: int = 8000,
-    device: str = "/dev/video0",
-    width: int = 1280,
-    height: int = 720,
-    fps: int = 15,
-    quality: int = 80,
-):
-    """
-    Start a TCP server that streams JPEG-compressed frames from a USB UVC camera.
-    The JPEG quality is configurable; 70–85 is a good Pi Zero 2 W range.
-    """
-    # Open camera first so we fail fast before accepting a client
+    while True:
+        ok, frame = cap.read()
+        if not ok:
+            # brief pause, then continue
+            time.sleep(0.01)
+            continue
+
+        ok, jpeg = cv2.imencode(".jpg", frame, enc_params)
+        if not ok:
+            continue
+        payload = jpeg.tobytes()
+
+        # Latest-only queue: replace any existing item
+        try:
+            # if queue already has an item, remove it to keep only the newest
+            try:
+                q.get_nowait()
+            except Empty:
+                pass
+            q.put_nowait(payload)
+        except Full:
+            # shouldn't happen with manual drain above, but ignore if it does
+            pass
+
+        # simple pacing to avoid overproducing
+        next_deadline += frame_interval
+        sleep_time = next_deadline - time.perf_counter()
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+        else:
+            # we're late; realign to now so we don't drift
+            next_deadline = time.perf_counter()
+
+def send_all(sock: socket.socket, buf: memoryview, timeout_s: float = 0.25) -> bool:
+    """Attempt to send the whole buffer within timeout; return False to drop if too slow."""
+    end = time.perf_counter() + timeout_s
+    sent = 0
+    while sent < len(buf):
+        remaining = len(buf) - sent
+        # short sends to avoid monopolizing if the peer is slow
+        n = sock.send(buf[sent: sent + min(remaining, 64 * 1024)])
+        if n <= 0:
+            return False
+        sent += n
+        if time.perf_counter() > end:
+            return False
+    return True
+
+def streamer(host: str, port: int, device: str, width: int, height: int, fps: int, quality: int):
     cap = open_usb_camera(device, width, height, fps)
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # Reuse socket quickly after restart
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind((host, port))
-    server_socket.listen(1)
-    print(f"Video server listening on 0.0.0.0:{port} …")
+    q: Queue[bytes] = Queue(maxsize=1)  # latest-only buffer
+    prod = threading.Thread(target=producer, args=(cap, q, quality, fps), daemon=True)
+    prod.start()
 
-    client_socket = None
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind((host, port))
+    srv.listen(1)
+    print(f"Listening on 0.0.0.0:{port}")
+
     try:
-        client_socket, addr = server_socket.accept()
-        print(f"Video client connected from {addr}")
-
-        # Main streaming loop
-        encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), int(quality)]
         while True:
-            ok, frame = cap.read()
-            if not ok:
-                # Try to recover a couple of times before giving up
-                print("WARN: camera read failed; retrying…", file=sys.stderr)
-                time.sleep(0.05)
-                continue
-
-            ok, jpeg = cv2.imencode(".jpg", frame, encode_params)
-            if not ok:
-                # Skip frame if JPEG encode fails
-                print("WARN: JPEG encode failed; skipping frame", file=sys.stderr)
-                continue
-
-            data = jpeg.tobytes()
-            # Send 4-byte length prefix (big-endian), then the JPEG payload
-            header = struct.pack(">I", len(data))
-            client_socket.sendall(header + data)
-            # Optional: throttle to approximate FPS if your camera outputs faster
-            # time.sleep(1.0 / fps)
-
-    except (BrokenPipeError, ConnectionResetError):
-        print("Client disconnected.")
-    except Exception as e:
-        print(f"Video streaming error: {e}", file=sys.stderr)
-    finally:
-        if client_socket:
+            client, addr = srv.accept()
+            print(f"Client connected: {addr}")
+            # Low-latency TCP knobs
             try:
-                client_socket.shutdown(socket.SHUT_RDWR)
+                client.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 128 * 1024)
             except Exception:
                 pass
-            client_socket.close()
-        cap.release()
-        server_socket.close()
-        print("Server closed.")
 
+            try:
+                while True:
+                    # get the *latest* payload, waiting briefly if needed
+                    try:
+                        payload = q.get(timeout=1.0)
+                    except Empty:
+                        continue
+
+                    header = struct.pack(">I", len(payload))
+                    # Try sending quickly; if slow, drop this frame and move on
+                    if not send_all(client, memoryview(header)) or not send_all(client, memoryview(payload)):
+                        print("Send slow or failed; dropping frame")
+                        # If it keeps failing, ConnectionReset will break us out shortly
+            except (ConnectionResetError, BrokenPipeError, OSError):
+                print("Client disconnected.")
+                try:
+                    client.shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                client.close()
+            except KeyboardInterrupt:
+                raise
+    except KeyboardInterrupt:
+        print("Shutting down…")
+    finally:
+        cap.release()
+        srv.close()
 
 def parse_args():
-    p = argparse.ArgumentParser(description="USB Camera TCP Streaming Server")
-    p.add_argument("--host", default="", help="Bind host (default: all interfaces)")
-    p.add_argument("--port", type=int, default=8000, help="TCP port (default: 8000)")
-    p.add_argument(
-        "--device", default="/dev/video0", help="Video device (e.g., /dev/video0)"
-    )
-    p.add_argument("--width", type=int, default=1280, help="Frame width")
-    p.add_argument("--height", type=int, default=720, help="Frame height")
-    p.add_argument("--fps", type=int, default=15, help="Target FPS")
-    p.add_argument(
-        "--quality",
-        type=int,
-        default=80,
-        help="JPEG quality (1–100, higher=better/larger)",
-    )
-    return p.parse_args()
-
+    ap = argparse.ArgumentParser(description="Low-latency USB camera streamer")
+    ap.add_argument("--host", default="", help="Bind host (default: all)")
+    ap.add_argument("--port", type=int, default=8000, help="TCP port")
+    ap.add_argument("--device", default="/dev/video0", help="UVC device path")
+    ap.add_argument("--width", type=int, default=960, help="Frame width (try 960)")
+    ap.add_argument("--height", type=int, default=540, help="Frame height (try 540)")
+    ap.add_argument("--fps", type=int, default=15, help="Target FPS (15 is good on Pi Zero 2 W)")
+    ap.add_argument("--quality", type=int, default=72, help="JPEG quality (lower = smaller/faster)")
+    return ap.parse_args()
 
 if __name__ == "__main__":
-    args = parse_args()
-    video_streaming_server(
-        host=args.host,
-        port=args.port,
-        device=args.device,
-        width=args.width,
-        height=args.height,
-        fps=args.fps,
-        quality=args.quality,
-    )
+    a = parse_args()
+    streamer(a.host, a.port, a.device, a.width, a.height, a.fps, a.quality)
