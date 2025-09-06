@@ -3,7 +3,7 @@ import keyboard
 import time
 
 # Define the Pi Zero's IP address and port
-HOST = '172.20.10.5'
+HOST = '172.20.10.7'
 PORT = 5000
 
 # Create socket connection to Pi
