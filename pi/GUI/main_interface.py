@@ -161,7 +161,7 @@ class GUI(tk.Tk):
     
     def keyboard_input(self, event):
         if event.type == '2':  # Key press event (KeyPress)
-            if event.char in ['w', 'a', 's', 'd', 'W', 'A', 'S', 'D']:
+            if event.char in ['w', 'a', 's', 'd']:
                 self.pressed_keys.add(event.char)  # Mark key as pressed
                 self.handle_movement(event.char)
             else:
@@ -173,13 +173,13 @@ class GUI(tk.Tk):
             self.movementStatus.config(text="Idle")
 
     def handle_movement(self, key):
-        if key == 'w' or key == 'W':
+        if key == 'w':
             self.btn_forward.invoke()  # Simulate button press
-        elif key == 's' or key == 'S':
+        elif key == 's':
             self.btn_back.invoke()
-        elif key == 'a' or key == 'A':
+        elif key == 'a':
             self.btn_left.invoke()
-        elif key == 'd' or key == 'D':
+        elif key == 'd':
             self.btn_right.invoke()
 
     def handle_special_keys(self, event):
@@ -208,7 +208,7 @@ class GUI(tk.Tk):
         self.speedSlider.set(new_speed)
 
     def move_forward(self):
-        self.send_command(f'B{self.speedSlider.get()}\n')
+        self.send_command(f'F{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Forward")
         self.btn_forward.config(bg="lightgreen")
         rightWheelRPM =  160 * (self.speedSlider.get() / 999)
@@ -218,7 +218,7 @@ class GUI(tk.Tk):
         print("Moving forward")
     
     def move_backward(self):
-        self.send_command(f'F{self.speedSlider.get()}\n')
+        self.send_command(f'B{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Backward")
         self.btn_back.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
@@ -228,7 +228,7 @@ class GUI(tk.Tk):
         print("Moving backward")  
 
     def turn_left(self):
-        self.send_command(f'R{self.speedSlider.get()}\n')
+        self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
         self.btn_left.config(bg="lightgreen")
         rightWheelRPM = 160 * (self.speedSlider.get() / 999)
@@ -238,7 +238,7 @@ class GUI(tk.Tk):
         print("Turning left")
 
     def turn_right(self):
-        self.send_command(f'L{self.speedSlider.get()}\n')
+        self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
         self.btn_right.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
