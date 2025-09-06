@@ -33,7 +33,7 @@ class GUI(tk.Tk):
         self._running = False
         self._imgtk_cache = None
         self.imageDir = os.path.expanduser("pi/GUI/stored_image")
-        self.host = 'raspberrypi.local'  # Change to your Pi's hostname or IP address
+        self.host = '172.20.10.7'  # Change to your Pi's hostname or IP address
         self.port = 5000
         self.power = 0.006  # Initial power variable
 
