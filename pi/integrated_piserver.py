@@ -1,4 +1,6 @@
 import socket
+import serial
+import sys
 import struct
 import cv2
 from picamera2 import Picamera2
@@ -6,9 +8,10 @@ import numpy as np
 import threading
 import RPi.GPIO as GPIO
 import time
-import serial
-import sys
+import json
+import subprocess
 from gpiozero import LED
+
 
 # ---------- UART setup ----------
 def open_serial():
@@ -21,7 +24,94 @@ def open_serial():
         timeout=1
     )
 
-# --- Video Streaming Server ---
+
+# -------- Robot Control Server --------
+def robot_control_server(ser, host = '', port = 5000):
+    
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((host, port))
+    server_socket.listen(1)
+    print(f"Robot control server listening on port {port}...")
+
+    while True:
+        conn, addr = server_socket.accept()
+        print(f"Robot Control client connected from {addr}")
+        with conn:
+            while True:
+                data = conn.recv(1024).decode().strip()
+                if not data:
+                    print("[TCP] Client disconnected")
+                    break
+
+                # Forward raw command directly to UART
+                msg = data + "\n"
+                try:
+                    ser.write(msg.encode("ascii"))
+                    print(f"[UART] Sent: {data}")
+                except Exception as e:
+                    print(f"[UART] Write error: {e}")
+
+
+# -------- Audio Streaming Server --------
+def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=16000, channels=1, sample_fmt='S16_LE', chunk_ms=20):
+
+    # bytes per sample for S16_LE is 2
+    bytes_per_sample = 2 if sample_fmt.endswith('16_LE') else 4
+    chunk_bytes = int(sample_rate * channels * bytes_per_sample * (chunk_ms / 1000.0))
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((host, port))
+    server_socket.listen(1)
+    print(f"Audio server listening on port {port}...")
+    client_socket, addr = server_socket.accept()
+    print(f"Audio client connected from {addr}")
+
+    # Send one-line JSON header so the client knows what to expect
+    header = {
+        "sample_rate": sample_rate,
+        "channels": channels,
+        "format": sample_fmt,
+        "chunk_bytes": chunk_bytes
+    }
+    client_socket.sendall((json.dumps(header) + "\n").encode("utf-8"))
+
+    # Launch arecord to capture raw PCM to stdout
+    # -t raw => raw stream, no WAV header
+    # Use 'hw:1,0' or 'plughw:1,0' depending on your ALSA setup
+    cmd = [
+        "arecord",
+        "-D", device,
+        "-c", str(channels),
+        "-r", str(sample_rate),
+        "-f", sample_fmt,
+        "-t", "raw"
+    ]
+    # Buffer size helps arecord; we’ll read exact chunk sizes
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+
+    try:
+        while True:
+            # Read exactly chunk_bytes from arecord
+            chunk = proc.stdout.read(chunk_bytes)
+            if not chunk or len(chunk) != chunk_bytes:
+                # End or underrun; attempt a short wait then continue
+                time.sleep(0.005)
+                continue
+            # Send length prefix + data
+            client_socket.sendall(struct.pack(">I", len(chunk)) + chunk)
+    except Exception as e:
+        print(f"Audio streaming error: {e}")
+    finally:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        client_socket.close()
+        server_socket.close()
+
+
+# -------- Video Streaming Server (unchanged) --------
 def video_streaming_server(host='', port=8000):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
@@ -42,10 +132,8 @@ def video_streaming_server(host='', port=8000):
             ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
             if not ret:
                 continue
-
             data = jpeg.tobytes()
             client_socket.sendall(struct.pack(">I", len(data)) + data)
-            print(f"Sent frame of size {len(data)} bytes")
     except Exception as e:
         print(f"Video streaming error: {e}")
     finally:
@@ -53,13 +141,11 @@ def video_streaming_server(host='', port=8000):
         client_socket.close()
         server_socket.close()
 
-def main():
-    HOST = '0.0.0.0'
-    PORT = 5000
 
-    ser = None
+# -------- Main --------
+if __name__ == "__main__":
 
-    # Toggle NRST on STM32 to boot and run the code
+    # Toggle NRST on STM32 to boot and run the firmware (GPIO4 is connected to NRST on STM32)
     led = LED(4)
     led.on()
     time.sleep(0.5)
@@ -68,40 +154,26 @@ def main():
     led.on()
     time.sleep(0.5)
 
+    # Open UART port
+    ser = open_serial()
+    print("[UART] Opened /dev/ttyS0 @115200")
+
+    # Start servers in separate threads
+    control_thread = threading.Thread(target=robot_control_server, args=(ser,), daemon=True)
     video_thread = threading.Thread(target=video_streaming_server, daemon=True)
-
+    audio_thread = threading.Thread(
+        target=audio_streaming_server,
+        kwargs={"port": 8001, "device": "plughw:1,0", "sample_rate": 16000, "channels": 1, "sample_fmt": "S16_LE"},
+        daemon=True
+    )
+    control_thread.start()
     video_thread.start()
+    audio_thread.start()
 
-    print("Pi servers running. Press Ctrl+C to exit.")
-
+    print("Pi servers running (video:8000, audio:8001, control:5000). Press Ctrl+C to exit.")
     try:
-        ser = open_serial()
-        print("[UART] Opened /dev/ttyS0 @115200")
-
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
-            srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            srv.bind((HOST, PORT))
-            srv.listen(1)
-            print(f"[TCP] Listening on {HOST}:{PORT}")
-
-            while True:
-                conn, addr = srv.accept()
-                print(f"[TCP] Connected by {addr}")
-                with conn:
-                    while True:
-                        data = conn.recv(1024).decode().strip()
-                        if not data:
-                            print("[TCP] Client disconnected")
-                            break
-
-                        # Forward raw command directly to UART
-                        msg = data + "\n"
-                        try:
-                            ser.write(msg.encode("ascii"))
-                            print(f"[UART] Sent: {data}")
-                        except Exception as e:
-                            print(f"[UART] Write error: {e}")
-
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\n[SYS] Interrupted by user")
         GPIO.cleanup()
@@ -114,6 +186,3 @@ def main():
                 print("[UART] Closed")
         except Exception:
             pass
-
-if __name__ == "__main__":
-    main()
