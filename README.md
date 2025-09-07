@@ -50,4 +50,7 @@ The **Wildlife Monitoring Robot** is a tele-operated mobile robot designed for w
 ### 2. Software Setup
 
 #### Dependencies:
+##### Pi Zero 2W
+- piserver.py
+##### Base-Station
 - TBC
