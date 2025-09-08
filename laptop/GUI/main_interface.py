@@ -32,8 +32,8 @@ class GUI(tk.Tk):
         self.camera_index = camera
         self._running = False
         self._imgtk_cache = None
-        self.imageDir = os.path.expanduser("pi/GUI/stored_image")
-        self.host = '172.20.10.7'  # Change to your Pi's hostname or IP address
+        self.imageDir = os.path.expanduser("laptop/GUI/stored_image")
+        self.host = 'raspberrypi.local'  # Change to your Pi's hostname or IP address
         self.port = 5000
         self.power = 0.006  # Initial power variable
 
@@ -161,7 +161,7 @@ class GUI(tk.Tk):
     
     def keyboard_input(self, event):
         if event.type == '2':  # Key press event (KeyPress)
-            if event.char in ['w', 'a', 's', 'd']:
+            if event.char in ['w', 'a', 's', 'd', 'W', 'A', 'S', 'D']:
                 self.pressed_keys.add(event.char)  # Mark key as pressed
                 self.handle_movement(event.char)
             else:
@@ -173,13 +173,13 @@ class GUI(tk.Tk):
             self.movementStatus.config(text="Idle")
 
     def handle_movement(self, key):
-        if key == 'w':
+        if key == 'w' or key == 'W':
             self.btn_forward.invoke()  # Simulate button press
-        elif key == 's':
+        elif key == 's' or key == 'S':
             self.btn_back.invoke()
-        elif key == 'a':
+        elif key == 'a' or key == 'A':
             self.btn_left.invoke()
-        elif key == 'd':
+        elif key == 'd' or key == 'D':
             self.btn_right.invoke()
 
     def handle_special_keys(self, event):
@@ -208,7 +208,7 @@ class GUI(tk.Tk):
         self.speedSlider.set(new_speed)
 
     def move_forward(self):
-        self.send_command(f'F{self.speedSlider.get()}\n')
+        self.send_command(f'B{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Forward")
         self.btn_forward.config(bg="lightgreen")
         rightWheelRPM =  160 * (self.speedSlider.get() / 999)
@@ -218,7 +218,7 @@ class GUI(tk.Tk):
         print("Moving forward")
     
     def move_backward(self):
-        self.send_command(f'B{self.speedSlider.get()}\n')
+        self.send_command(f'F{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Backward")
         self.btn_back.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
@@ -228,7 +228,7 @@ class GUI(tk.Tk):
         print("Moving backward")  
 
     def turn_left(self):
-        self.send_command(f'L{self.speedSlider.get()}\n')
+        self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
         self.btn_left.config(bg="lightgreen")
         rightWheelRPM = 160 * (self.speedSlider.get() / 999)
@@ -238,7 +238,7 @@ class GUI(tk.Tk):
         print("Turning left")
 
     def turn_right(self):
-        self.send_command(f'R{self.speedSlider.get()}\n')
+        self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
         self.btn_right.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
