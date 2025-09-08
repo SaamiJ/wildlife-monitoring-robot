@@ -23,7 +23,7 @@ import socket
 # 6. Run "docker run -e DISPLAY=host.docker.internal:0 --rm -v /tmp/.X11-unix:/tmp/.X11-unix wildlife-gui"
 
 class GUI(tk.Tk):
-    def __init__(self, camera=0):
+    def __init__(self, host, port, camera=0):
         super().__init__()
 
         # Variable initializatio
@@ -32,10 +32,12 @@ class GUI(tk.Tk):
         self.camera_index = camera
         self._running = False
         self._imgtk_cache = None
-        self.imageDir = os.path.expanduser("laptop/GUI/stored_image")
-        self.host = 'raspberrypi.local'  # Change to your Pi's hostname or IP address
-        self.port = 5000
+        self.imageDir = os.path.expanduser("laptop/stored_image")
+        self.host = host
+        self.port = port
         self.power = 0.006  # Initial power variable
+
+        self.videoClient = camera
 
         # calling layout window
         self.interface_layout()
@@ -210,7 +212,6 @@ class GUI(tk.Tk):
     def move_forward(self):
         self.send_command(f'B{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Forward")
-        self.btn_forward.config(bg="lightgreen")
         rightWheelRPM =  160 * (self.speedSlider.get() / 999)
         leftWheelRPM = 160 * (self.speedSlider.get() / 999)
         self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: {rightWheelRPM:.1f}")
@@ -220,7 +221,6 @@ class GUI(tk.Tk):
     def move_backward(self):
         self.send_command(f'F{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Backward")
-        self.btn_back.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
         leftWheelRPM = -160 * (self.speedSlider.get() / 999)
         self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: -{rightWheelRPM:.1f}")
@@ -230,7 +230,6 @@ class GUI(tk.Tk):
     def turn_left(self):
         self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
-        self.btn_left.config(bg="lightgreen")
         rightWheelRPM = 160 * (self.speedSlider.get() / 999)
         leftWheelRPM = -160 * (self.speedSlider.get() / 999)
         self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: {rightWheelRPM:.1f}")
@@ -240,7 +239,6 @@ class GUI(tk.Tk):
     def turn_right(self):
         self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
-        self.btn_right.config(bg="lightgreen")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
         leftWheelRPM = 160 * (self.speedSlider.get() / 999)
         self.rightWheelLabel.config(text=f"Right Wheel (rpm)\t: -{rightWheelRPM:.1f}")
@@ -256,11 +254,11 @@ class GUI(tk.Tk):
         if self._running:
             return
         # Open camera (0 = default webcam). For a network stream use a URL instead.
-        self.cap = cv2.VideoCapture(self.camera_index)
-        if not self.cap.isOpened():
-            messagebox.showerror("Error", "Could not open camera/stream.")
-            return
-        self._running = True
+        # self.cap = cv2.VideoCapture(self.camera_index)
+        # if not self.cap.isOpened():
+        #     messagebox.showerror("Error", "Could not open camera/stream.")
+        #     return
+        # self._running = True
         self.after(0, self.update_frame)
 
     def stop_camera(self):
@@ -270,12 +268,15 @@ class GUI(tk.Tk):
             self.cap = None
 
     def update_frame(self):
-        if not self._running or not self.cap:
-            return
+        # if not self._running or not self.cap:
+        #     return
 
-        ok, frame = self.cap.read()
-        frameStartTime = time.time()
-        if ok:
+        if not self.video_client.frame_queue.empty():
+            frame = self.videoClient.frame_queue.get()
+            self.videoClient.frame_queue.task_done()
+
+            frameStartTime = time.time()
+
             # BGR -> RGB
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -312,7 +313,7 @@ class GUI(tk.Tk):
         if not ok:
             messagebox.showerror("Error", "Failed to capture frame.")
             return
-        filename = f"pi/GUI/stored_image/image_{self.saved_image_count}.png"
+        filename = f"laptop/stored_image/image_{self.saved_image_count}.png"
         self.saved_image_count += 1
         cv2.imwrite(filename, frame)
         self.load_images_list()
