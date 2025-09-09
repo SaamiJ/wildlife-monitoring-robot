@@ -14,7 +14,7 @@ if __name__ == "__main__":
     video_client = VideoClient(server_ip='raspberrypi.local', server_port=8000,animal_names=animal_names)
     video_client.start()
 
-    app = GUI(host=hostIP, port=robotControlPort, camera=0)
+    app = GUI(host=hostIP, port=robotControlPort, camera=video_client)
     app.mainloop()
 
     video_client.stop()
