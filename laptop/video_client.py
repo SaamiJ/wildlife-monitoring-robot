@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 class VideoClient(threading.Thread):
-    def __init__(self, server_ip, server_port, animal_names, conf_threshold=0.5, log_file="detections_log.csv"):
+    def __init__(self, server_ip, server_port, animal_names, conf_threshold=0.5, log_file="laptop/detections_log.csv"):
         super().__init__()
         self.server_ip = server_ip
         self.server_port = server_port

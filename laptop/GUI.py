@@ -228,7 +228,7 @@ class GUI(tk.Tk):
         print("Moving backward")  
 
     def turn_left(self):
-        self.send_command(f'R{self.speedSlider.get()}\n')
+        self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
         rightWheelRPM = 160 * (self.speedSlider.get() / 999)
         leftWheelRPM = -160 * (self.speedSlider.get() / 999)
@@ -237,7 +237,7 @@ class GUI(tk.Tk):
         print("Turning left")
 
     def turn_right(self):
-        self.send_command(f'L{self.speedSlider.get()}\n')
+        self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
         leftWheelRPM = 160 * (self.speedSlider.get() / 999)
@@ -271,7 +271,7 @@ class GUI(tk.Tk):
         # if not self._running or not self.cap:
         #     return
 
-        if not self.video_client.frame_queue.empty():
+        if not self.videoClient.frame_queue.empty():
             frame = self.videoClient.frame_queue.get()
             self.videoClient.frame_queue.task_done()
 

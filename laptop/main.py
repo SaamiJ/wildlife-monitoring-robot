@@ -7,11 +7,11 @@ if __name__ == "__main__":
                 "Frog", "Crocodile", "Cockatoo", "Dingo", "Bat", "Snake", "Emu",
                 "Possum", "Wallaby"]
     
-    hostIP = 'raspberrypi.local'
+    hostIP = 'raspberrypi.local' #172.20.10.7
     robotControlPort = 5000
     videoPort = 8000
 
-    video_client = VideoClient(server_ip='raspberrypi.local', server_port=8000,animal_names=animal_names)
+    video_client = VideoClient(server_ip=hostIP, server_port=videoPort,animal_names=animal_names)
     video_client.start()
 
     app = GUI(host=hostIP, port=robotControlPort, camera=video_client)
