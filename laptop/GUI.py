@@ -36,6 +36,7 @@ class GUI(tk.Tk):
         self.host = host
         self.port = port
         self.power = 0.006  # Initial power variable
+        self.lastImage = None
 
         self.videoClient = camera
 
@@ -275,6 +276,7 @@ class GUI(tk.Tk):
         if not self.videoClient.frame_queue.empty():
             frame = self.videoClient.frame_queue.get()
             self.videoClient.frame_queue.task_done()
+            self.lastImage = frame
 
             frameStartTime = time.time()
 
@@ -307,16 +309,13 @@ class GUI(tk.Tk):
         self.after(30, self.update_frame)
 
     def save_image(self):
-        if not self.cap:
-            messagebox.showinfo("Info", "Start the camera first.")
+        if self.lastImage is None:
+            messagebox.showwarning("Warning", "No image to save.")
             return
-        ok, frame = self.cap.read()
-        if not ok:
-            messagebox.showerror("Error", "Failed to capture frame.")
-            return
+        
         filename = f"laptop/stored_image/image_{self.saved_image_count}.png"
         self.saved_image_count += 1
-        cv2.imwrite(filename, frame)
+        cv2.imwrite(filename, self.lastImage)
         self.load_images_list()
 
     def on_close(self):
