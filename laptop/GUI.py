@@ -84,7 +84,6 @@ class GUI(tk.Tk):
         self.connectButton = ttk.Button(self.connectionStatusFrame, text="Connect", command=self.connection_setup, width=7)
         self.connectButton.grid(row=3, column=0, padx=5, pady=5)
 
-
         # list of saved images
         self.statusFrame = tk.Frame(self, width=300, height=370, bg="white")
         self.statusFrame.grid(row=1, column=3, rowspan=2, columnspan=2, sticky="w", padx=10, pady=10)
@@ -143,6 +142,7 @@ class GUI(tk.Tk):
             self.sock.connect((self.host, self.port))
             self.connectionStatusLabel.config(text="Connected", fg="green")
             print("Connected to Pi Zero 2")
+            self.videoClient.connect()
         except socket.error as e:
             self.connectionStatusLabel.config(text=f"Error: {e}", fg="red")
             print(f"Connection error: {e}")
@@ -259,6 +259,7 @@ class GUI(tk.Tk):
         #     messagebox.showerror("Error", "Could not open camera/stream.")
         #     return
         # self._running = True
+        self.videoClient.start()
         self.after(0, self.update_frame)
 
     def stop_camera(self):

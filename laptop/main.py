@@ -11,8 +11,7 @@ if __name__ == "__main__":
     robotControlPort = 5000
     videoPort = 8000
 
-    video_client = VideoClient(server_ip=hostIP, server_port=videoPort,animal_names=animal_names)
-    video_client.start()
+    video_client = VideoClient(server_ip=hostIP, server_port=videoPort, animal_names=animal_names)
 
     app = GUI(host=hostIP, port=robotControlPort, camera=video_client)
     app.mainloop()
