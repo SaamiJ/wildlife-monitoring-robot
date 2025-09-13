@@ -143,7 +143,8 @@ class GUI(tk.Tk):
             self.sock.connect((self.host, self.port))
             self.connectionStatusLabel.config(text="Connected", fg="green")
             print("Connected to Pi Zero 2")
-            self.videoClient.connect()
+            # self.videoClient.connect()
+            
         except socket.error as e:
             self.connectionStatusLabel.config(text=f"Error: {e}", fg="red")
             print(f"Connection error: {e}")
@@ -260,7 +261,7 @@ class GUI(tk.Tk):
         #     messagebox.showerror("Error", "Could not open camera/stream.")
         #     return
         # self._running = True
-        self.videoClient.start()
+        
         self.after(0, self.update_frame)
 
     def stop_camera(self):

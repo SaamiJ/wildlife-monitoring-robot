@@ -73,15 +73,15 @@ class VideoClient(threading.Thread):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.server_ip, self.server_port))
-            self.connectionStatusLabel.config(text="Connected", fg="green")
             print("Connected to Pi Zero 2 W video server")
         except socket.error as e:
-            self.connectionStatusLabel.config(text=f"Error: {e}", fg="red")
             print(f"Connection error: {e}")
             self.sock = None
 
     def run(self):
         # Connect to Pi video stream server
+        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sock.connect((self.server_ip, self.server_port))
         data_buffer = b''
 
         try:
