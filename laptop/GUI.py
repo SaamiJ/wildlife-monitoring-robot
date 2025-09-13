@@ -302,7 +302,7 @@ class GUI(tk.Tk):
         self.fpsLabel.config(text=f"FPS: \t {self.videoClient._fps:.1f}")
 
         # Schedule next frame (~30–33 ms ≈ 30 FPS)
-        self.after(30, self.update_frame)
+        self.after(20, self.update_frame)
 
     def save_image(self):
         if self.lastImage is None:
