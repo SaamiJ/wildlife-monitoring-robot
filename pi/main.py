@@ -111,38 +111,8 @@ def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=
         server_socket.close()
 
 
-# -------- Video Streaming Server 1 (unchanged) --------
-def video_streaming_server_1(host='', port=8000):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((host, port))
-    server_socket.listen(1)
-    print(f"Video server listening on port {port}...")
-    client_socket, addr = server_socket.accept()
-    print(f"Video client connected from {addr}")
-
-    picam2 = Picamera2()
-    config = picam2.create_still_configuration(main={"size": (1280, 720)})
-    picam2.configure(config)
-    picam2.start()
-    time.sleep(2)  # camera warm-up
-
-    try:
-        while True:
-            frame = picam2.capture_array()
-            ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-            if not ret:
-                continue
-            data = jpeg.tobytes()
-            client_socket.sendall(struct.pack(">I", len(data)) + data)
-    except Exception as e:
-        print(f"Video streaming error: {e}")
-    finally:
-        picam2.stop()
-        client_socket.close()
-        server_socket.close()
-
-# -------- Video Streaming Server 2 (improved, supports multiple clients) --------
-def video_streaming_server_2(host='', port=8002):
+# -------- Video Streaming Server (unchanged) --------
+def video_streaming_server(host='', port=8000):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(1)
@@ -190,16 +160,16 @@ if __name__ == "__main__":
 
     # Start servers in separate threads
     control_thread = threading.Thread(target=robot_control_server, args=(ser,), daemon=True)
-    video_thread_1 = threading.Thread(target=video_streaming_server_1, daemon=True)
-    video_thread_2 = threading.Thread(target=video_streaming_server_2, daemon=True)
+    video_thread1 = threading.Thread(target=video_streaming_server, kwargs={"port": 8000}, daemon=True)
+    video_thread2 = threading.Thread(target=video_streaming_server, kwargs={"port": 8002}, daemon=True)
     audio_thread = threading.Thread(
         target=audio_streaming_server,
         kwargs={"port": 8001, "device": "plughw:1,0", "sample_rate": 16000, "channels": 1, "sample_fmt": "S16_LE"},
         daemon=True
     )
     control_thread.start()
-    video_thread_1.start()
-    video_thread_2.start()
+    video_thread1.start()
+    video_thread2.start()
     audio_thread.start()
 
     print("Pi servers running (video:8000, audio:8001, control:5000). Press Ctrl+C to exit.")
