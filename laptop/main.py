@@ -9,7 +9,7 @@ if __name__ == "__main__":
     
     hostIP = 'raspberrypi.local' #172.20.10.7
     robotControlPort = 5000
-    videoPort = 8002
+    videoPort = 8000
 
     video_client = VideoClient(server_ip=hostIP, server_port=videoPort, animal_names=animal_names)
 

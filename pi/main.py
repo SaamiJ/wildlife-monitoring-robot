@@ -120,7 +120,7 @@ def video_streaming_server(host='', port=8000):
     print(f"[VIDEO] Listening on port {port}...")
 
     picam2 = Picamera2()
-    config = picam2.create_video_configuration(main={"size": (640, 480)})
+    config = picam2.create_video_configuration(main={"size": (960, 540)})
     picam2.configure(config)
     picam2.start()
     time.sleep(0.5)  # warm-up
