@@ -279,8 +279,6 @@ class GUI(tk.Tk):
             self.videoClient.frame_queue.task_done()
             self.lastImage = frame
 
-            frameStartTime = time.time()
-
             # BGR -> RGB
             # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -301,10 +299,7 @@ class GUI(tk.Tk):
             self.start()
             return
         
-        frameEndTime = time.time()
-        timeDifference = frameEndTime - frameStartTime
-        fps = 1 / timeDifference if timeDifference > 0 else 0
-        self.fpsLabel.config(text=f"FPS: \t {fps:.1f}")
+        self.fpsLabel.config(text=f"FPS: \t {self.videoClient._fps:.1f}")
 
         # Schedule next frame (~30–33 ms ≈ 30 FPS)
         self.after(30, self.update_frame)
