@@ -112,105 +112,105 @@ def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=
 
 
 # -------- Video Streaming Server (unchanged) --------
-# def video_streaming_server(host='', port=8000):
-#     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     server_socket.bind((host, port))
-#     server_socket.listen(1)
-#     print(f"Video server listening on port {port}...")
-#     client_socket, addr = server_socket.accept()
-#     print(f"Video client connected from {addr}")
-
-#     picam2 = Picamera2()
-#     config = picam2.create_still_configuration(main={"size": (1280, 720)})
-#     picam2.configure(config)
-#     picam2.start()
-#     time.sleep(2)  # camera warm-up
-
-#     try:
-#         while True:
-#             frame = picam2.capture_array()
-#             ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-#             if not ret:
-#                 continue
-#             data = jpeg.tobytes()
-#             client_socket.sendall(struct.pack(">I", len(data)) + data)
-#     except Exception as e:
-#         print(f"Video streaming error: {e}")
-#     finally:
-#         picam2.stop()
-#         client_socket.close()
-#         server_socket.close()
-
-# Improved Video Streaming Server with multiple clients support chat gpt
 def video_streaming_server(host='', port=8000):
-    import errno
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((host, port))
-    server_socket.listen(5)
+    server_socket.listen(1)
     print(f"Video server listening on port {port}...")
+    client_socket, addr = server_socket.accept()
+    print(f"Video client connected from {addr}")
 
-    clients = set()
-    clients_lock = threading.Lock()
-
-    def accept_loop():
-        while True:
-            try:
-                conn, addr = server_socket.accept()
-                conn.settimeout(1.0)  # short timeout so a slow client won't stall forever
-                with clients_lock:
-                    clients.add(conn)
-                print(f"[VIDEO] Client connected from {addr} (total: {len(clients)})")
-            except Exception as e:
-                print(f"[VIDEO] Accept error: {e}")
-
-    # start acceptor thread
-    threading.Thread(target=accept_loop, daemon=True).start()
-
-    # camera init (same as yours)
     picam2 = Picamera2()
     config = picam2.create_still_configuration(main={"size": (1280, 720)})
     picam2.configure(config)
     picam2.start()
-    time.sleep(2)  # warm-up
+    time.sleep(2)  # camera warm-up
 
     try:
         while True:
             frame = picam2.capture_array()
-            ok, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-            if not ok:
+            ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            if not ret:
                 continue
             data = jpeg.tobytes()
-            packet = struct.pack(">I", len(data)) + data  # length prefix + JPEG
-
-            # broadcast to all clients
-            dead = []
-            with clients_lock:
-                for c in list(clients):
-                    try:
-                        c.sendall(packet)
-                    except (socket.timeout, BrokenPipeError, ConnectionResetError, OSError) as e:
-                        # mark dead clients to remove
-                        dead.append(c)
-                # cleanup dead clients
-                for c in dead:
-                    try:
-                        clients.remove(c)
-                        c.close()
-                    except Exception:
-                        pass
-                if dead:
-                    print(f"[VIDEO] Dropped {len(dead)} client(s). Active: {len(clients)}")
+            client_socket.sendall(struct.pack(">I", len(data)) + data)
     except Exception as e:
         print(f"Video streaming error: {e}")
     finally:
         picam2.stop()
-        with clients_lock:
-            for c in list(clients):
-                try: c.close()
-                except Exception: pass
-            clients.clear()
+        client_socket.close()
         server_socket.close()
+
+# Improved Video Streaming Server with multiple clients support chat gpt
+# def video_streaming_server(host='', port=8000):
+#     import errno
+#     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     server_socket.bind((host, port))
+#     server_socket.listen(5)
+#     print(f"Video server listening on port {port}...")
+
+#     clients = set()
+#     clients_lock = threading.Lock()
+
+#     def accept_loop():
+#         while True:
+#             try:
+#                 conn, addr = server_socket.accept()
+#                 conn.settimeout(1.0)  # short timeout so a slow client won't stall forever
+#                 with clients_lock:
+#                     clients.add(conn)
+#                 print(f"[VIDEO] Client connected from {addr} (total: {len(clients)})")
+#             except Exception as e:
+#                 print(f"[VIDEO] Accept error: {e}")
+
+#     # start acceptor thread
+#     threading.Thread(target=accept_loop, daemon=True).start()
+
+#     # camera init (same as yours)
+#     picam2 = Picamera2()
+#     config = picam2.create_still_configuration(main={"size": (1280, 720)})
+#     picam2.configure(config)
+#     picam2.start()
+#     time.sleep(2)  # warm-up
+
+#     try:
+#         while True:
+#             frame = picam2.capture_array()
+#             ok, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+#             if not ok:
+#                 continue
+#             data = jpeg.tobytes()
+#             packet = struct.pack(">I", len(data)) + data  # length prefix + JPEG
+
+#             # broadcast to all clients
+#             dead = []
+#             with clients_lock:
+#                 for c in list(clients):
+#                     try:
+#                         c.sendall(packet)
+#                     except (socket.timeout, BrokenPipeError, ConnectionResetError, OSError) as e:
+#                         # mark dead clients to remove
+#                         dead.append(c)
+#                 # cleanup dead clients
+#                 for c in dead:
+#                     try:
+#                         clients.remove(c)
+#                         c.close()
+#                     except Exception:
+#                         pass
+#                 if dead:
+#                     print(f"[VIDEO] Dropped {len(dead)} client(s). Active: {len(clients)}")
+#     except Exception as e:
+#         print(f"Video streaming error: {e}")
+#     finally:
+#         picam2.stop()
+#         with clients_lock:
+#             for c in list(clients):
+#                 try: c.close()
+#                 except Exception: pass
+#             clients.clear()
+#         server_socket.close()
 
 
 
