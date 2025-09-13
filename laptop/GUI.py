@@ -262,7 +262,6 @@ class GUI(tk.Tk):
         #     messagebox.showerror("Error", "Could not open camera/stream.")
         #     return
         # self._running = True
-        
         self.after(0, self.update_frame)
 
     def stop_camera(self):
@@ -283,7 +282,7 @@ class GUI(tk.Tk):
             frameStartTime = time.time()
 
             # BGR -> RGB
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Fit to label while keeping aspect ratio
             h, w, _ = frame.shape
