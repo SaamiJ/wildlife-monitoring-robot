@@ -143,7 +143,8 @@ class GUI(tk.Tk):
             self.sock.connect((self.host, self.port))
             self.connectionStatusLabel.config(text="Connected", fg="green")
             print("Connected to Pi Zero 2")
-            # self.videoClient.connect()
+            self.videoClient.connect()
+            self.videoClient.start()
             
         except socket.error as e:
             self.connectionStatusLabel.config(text=f"Error: {e}", fg="red")
