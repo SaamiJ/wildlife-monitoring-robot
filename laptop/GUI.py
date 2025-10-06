@@ -213,7 +213,7 @@ class GUI(tk.Tk):
         self.speedSlider.set(new_speed)
 
     def move_forward(self):
-        self.send_command(f'B{self.speedSlider.get()}\n')
+        self.send_command(f'F{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Forward")
         rightWheelRPM =  160 * (self.speedSlider.get() / 999)
         leftWheelRPM = 160 * (self.speedSlider.get() / 999)
@@ -222,7 +222,7 @@ class GUI(tk.Tk):
         print("Moving forward")
     
     def move_backward(self):
-        self.send_command(f'F{self.speedSlider.get()}\n')
+        self.send_command(f'B{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Backward")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
         leftWheelRPM = -160 * (self.speedSlider.get() / 999)
@@ -231,7 +231,7 @@ class GUI(tk.Tk):
         print("Moving backward")  
 
     def turn_left(self):
-        self.send_command(f'L{self.speedSlider.get()}\n')
+        self.send_command(f'R{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Left")
         rightWheelRPM = 160 * (self.speedSlider.get() / 999)
         leftWheelRPM = -160 * (self.speedSlider.get() / 999)
@@ -240,7 +240,7 @@ class GUI(tk.Tk):
         print("Turning left")
 
     def turn_right(self):
-        self.send_command(f'R{self.speedSlider.get()}\n')
+        self.send_command(f'L{self.speedSlider.get()}\n')
         self.movementStatus.config(text="Right")
         rightWheelRPM = -160 * (self.speedSlider.get() / 999)
         leftWheelRPM = 160 * (self.speedSlider.get() / 999)
@@ -277,9 +277,9 @@ class GUI(tk.Tk):
         if not self.videoClient.frame_queue.empty():
             frame = self.videoClient.frame_queue.get()
             self.videoClient.frame_queue.task_done()
-            self.lastImage = frame
+            
 
-            # BGR -> RGB
+            # # BGR -> RGB
             # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Fit to label while keeping aspect ratio
@@ -292,6 +292,7 @@ class GUI(tk.Tk):
 
             img = Image.fromarray(frame)
             self._imgtk_cache = ImageTk.PhotoImage(image=img)
+            self.lastImage = frame  # Store the last displayed image
             self.videoLabel.configure(image=self._imgtk_cache)
         else:
             # Try to recover on read failures
@@ -302,7 +303,7 @@ class GUI(tk.Tk):
         self.fpsLabel.config(text=f"FPS: \t {self.videoClient._fps:.1f}")
 
         # Schedule next frame (~30–33 ms ≈ 30 FPS)
-        self.after(20, self.update_frame)
+        self.after(18, self.update_frame)
 
     def save_image(self):
         if self.lastImage is None:
