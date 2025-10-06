@@ -3,6 +3,7 @@ import serial
 import sys
 import struct
 import cv2
+import queue
 from picamera2 import Picamera2
 import numpy as np
 import threading
@@ -113,7 +114,6 @@ def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=
 
 
 def video_streaming_server(host='', port=8000):
-    import queue
 
     class ClientWriter(threading.Thread):
         def __init__(self, conn, on_close):
