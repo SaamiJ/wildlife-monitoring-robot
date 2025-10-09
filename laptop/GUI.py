@@ -279,9 +279,6 @@ class GUI(tk.Tk):
             self.videoClient.frame_queue.task_done()
             
 
-            # # BGR -> RGB
-            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
             # Fit to label while keeping aspect ratio
             h, w, _ = frame.shape
             Lw = self.videoFrame.winfo_width() or 1
@@ -310,7 +307,12 @@ class GUI(tk.Tk):
             messagebox.showwarning("Warning", "No image to save.")
             return
         
-        filename = f"laptop/stored_image/image_{self.saved_image_count}.png"
+        detection = self.videoClient.get_latest()
+        animal_name = detection["animals"][-1]
+        dateTime = detection["times"][-1]
+
+        
+        filename = f"laptop/stored_image/{animal_name}_{dateTime}.png"
         self.saved_image_count += 1
         cv2.imwrite(filename, self.lastImage)
         self.load_images_list()
