@@ -210,7 +210,7 @@ def video_streaming_server(host='', port=8000):
         # target_dt = 1.0 / 30.0
         while True:
             frame = picam2.capture_array()
-            ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
             if not ok:
                 continue
             data = jpeg.tobytes()
