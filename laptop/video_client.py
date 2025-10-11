@@ -11,7 +11,7 @@ import os
 from ultralytics import YOLO
 from collections import deque
 
-MODEL_PATH = "laptop/best.pt"
+MODEL_PATH = "laptop\\best.pt"
 
 class VideoClient(threading.Thread):
     def __init__(
@@ -179,108 +179,50 @@ class VideoClient(threading.Thread):
             print(f"Connection error: {e}")
             self.sock = None
 
+    # ----- main loop -----
     def run(self):
-        # Connect to Pi video stream server
-        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.connect((self.server_ip, self.server_port))
-        data_buffer = b''
+        buf = b''
 
         try:
             while self.running:
-                # Read message length (4 bytes)
-                while len(data_buffer) < 4:
+                # read 4-byte length
+                while len(buf) < 4:
                     more = self.sock.recv(4096)
                     if not more:
                         raise ConnectionError("Connection closed by server")
-                    data_buffer += more
-                msg_len = struct.unpack(">I", data_buffer[:4])[0]
-                data_buffer = data_buffer[4:]
+                    buf += more
+                msg_len = struct.unpack(">I", buf[:4])[0]
+                buf = buf[4:]
 
-                # Read frame data
-                while len(data_buffer) < msg_len:
+                # read payload
+                while len(buf) < msg_len:
                     more = self.sock.recv(4096)
                     if not more:
                         raise ConnectionError("Connection closed by server")
-                    data_buffer += more
+                    buf += more
 
-                frame_data = data_buffer[:msg_len]
-                data_buffer = data_buffer[msg_len:]
+                frame_data = buf[:msg_len]
+                buf = buf[msg_len:]
 
-                # Decode JPEG frame (BGR)
-                frame = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
+                # decode JPEG/PNG -> BGR frame
+                frame = cv2.imdecode(np.frombuffer(frame_data, np.uint8), cv2.IMREAD_COLOR)
                 if frame is None:
                     continue
 
-                # --- FPS update & draw ---
                 fps = self._update_fps()
                 self._draw_fps(frame, fps)
 
-                #### MODEL HERE (I think) ####
+                self._detect_and_annotate(frame)
 
-                # Put frame into queue for GUI display (drop frame if queue full)
                 if not self.frame_queue.full():
                     self.frame_queue.put(frame)
-
         except Exception as e:
             print(f"VideoClient error: {e}")
         finally:
-            self.sock.close()
-
-    def connect(self):
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.connect((self.server_ip, self.server_port))
-            print("Connected to Pi Zero 2 W video server")
-        except socket.error as e:
-            print(f"Connection error: {e}")
-            self.sock = None
-
-    def run(self):
-        # Connect to Pi video stream server
-        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.sock.connect((self.server_ip, self.server_port))
-        data_buffer = b''
-
-        try:
-            while self.running:
-                # Read message length (4 bytes)
-                while len(data_buffer) < 4:
-                    more = self.sock.recv(4096)
-                    if not more:
-                        raise ConnectionError("Connection closed by server")
-                    data_buffer += more
-                msg_len = struct.unpack(">I", data_buffer[:4])[0]
-                data_buffer = data_buffer[4:]
-
-                # Read frame data
-                while len(data_buffer) < msg_len:
-                    more = self.sock.recv(4096)
-                    if not more:
-                        raise ConnectionError("Connection closed by server")
-                    data_buffer += more
-
-                frame_data = data_buffer[:msg_len]
-                data_buffer = data_buffer[msg_len:]
-
-                # Decode JPEG frame (BGR)
-                frame = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
-                if frame is None:
-                    continue
-
-                # --- FPS update & draw ---
-                fps = self._update_fps()
-                self._draw_fps(frame, fps)
-
-                #### MODEL HERE (I think) ####
-
-                # Put frame into queue for GUI display (drop frame if queue full)
-                if not self.frame_queue.full():
-                    self.frame_queue.put(frame)
-
-        except Exception as e:
-            print(f"VideoClient error: {e}")
-        finally:
-            self.sock.close()
+            try:
+                self.sock.close()
+            except Exception:
+                pass
 
     def stop(self):
         self.running = False
