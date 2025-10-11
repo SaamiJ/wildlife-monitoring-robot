@@ -3,6 +3,7 @@ import serial
 import sys
 import struct
 import cv2
+import queue
 from picamera2 import Picamera2
 import numpy as np
 import threading
@@ -113,51 +114,127 @@ def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=
 
 
 def video_streaming_server(host='', port=8000):
+
+    class ClientWriter(threading.Thread):
+        def __init__(self, conn, on_close):
+            super().__init__(daemon=True)
+            self.conn = conn
+            self.q = queue.Queue(maxsize=1)  # latest frame only
+            self.on_close = on_close
+            self.alive = True
+            # Keep sends from blocking forever
+            try:
+                self.conn.settimeout(2.0)
+                # Modest send buffer helps smoothness without hiding backpressure
+                self.conn.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
+            except Exception:
+                pass
+
+        def push(self, frame_bytes):
+            # Drop previous frame if still waiting to be sent
+            try:
+                if self.q.full():
+                    _ = self.q.get_nowait()
+                self.q.put_nowait(frame_bytes)
+            except queue.Full:
+                # Extremely rare with the get_nowait above; okay to drop
+                pass
+
+        def run(self):
+            try:
+                while self.alive:
+                    data = self.q.get()  # blocks until a frame is available
+                    if data is None:
+                        break
+                    # length-prefix then payload
+                    self.conn.sendall(struct.pack(">I", len(data)))
+                    self.conn.sendall(data)
+            except Exception:
+                # client likely disconnected / too slow / timeout
+                pass
+            finally:
+                try:
+                    self.conn.close()
+                except Exception:
+                    pass
+                self.on_close(self)
+
+        def stop(self):
+            self.alive = False
+            # Unblock the queue
+            try:
+                self.q.put_nowait(None)
+            except Exception:
+                pass
+
+    # ---- server socket ----
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((host, port))
-    server_socket.listen(16)   # allow up to 16 queued connections
+    server_socket.listen(16)
     print(f"[VIDEO] Listening on port {port}...")
 
+    # ---- camera ----
     picam2 = Picamera2()
+    # Keep resolution/quality modest; you can tune these
     config = picam2.create_video_configuration(main={"size": (960, 540)})
     picam2.configure(config)
     picam2.start()
     time.sleep(0.5)  # warm-up
 
+    # ---- client registry ----
     clients = set()
     lock = threading.Lock()
 
-    # --- accept clients in a separate thread ---
+    def on_close(writer):
+        with lock:
+            if writer in clients:
+                clients.remove(writer)
+        print("[VIDEO] client closed")
+
+    # ---- accept loop ----
     def accept_loop():
         while True:
             conn, addr = server_socket.accept()
             print(f"[VIDEO] client connected from {addr}")
+            writer = ClientWriter(conn, on_close)
             with lock:
-                clients.add(conn)
+                clients.add(writer)
+            writer.start()
 
     threading.Thread(target=accept_loop, daemon=True).start()
 
-    # --- capture and broadcast loop ---
-    while True:
-        frame = picam2.capture_array()
-        ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-        if not ok:
-            continue
-        data = jpeg.tobytes()
-
-        dead = []
+    # ---- capture + fan-out ----
+    try:
+        # You can add a simple FPS cap if needed:
+        # target_dt = 1.0 / 30.0
+        while True:
+            frame = picam2.capture_array()
+            ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            if not ok:
+                continue
+            data = jpeg.tobytes()
+            with lock:
+                # push latest frame; slow clients auto-drop old frames
+                for w in list(clients):
+                    w.push(data)
+            # Optional FPS cap:
+            # time.sleep(target_dt)
+    except KeyboardInterrupt:
+        pass
+    finally:
         with lock:
-            for conn in list(clients):
-                try:
-                    conn.sendall(struct.pack(">I", len(data)))
-                    conn.sendall(data)
-                except Exception:
-                    # client died, mark for removal
-                    dead.append(conn)
-            for d in dead:
-                clients.discard(d)
-                d.close()
+            for w in list(clients):
+                w.stop()
+        try:
+            server_socket.close()
+        except Exception:
+            pass
+        try:
+            picam2.stop()
+        except Exception:
+            pass
+
 
 
 # -------- Main --------
