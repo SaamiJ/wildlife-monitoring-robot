@@ -11,7 +11,7 @@ import os
 from ultralytics import YOLO
 from collections import deque
 
-MODEL_PATH = "laptop\\best.pt"
+MODEL_PATH = "laptop/best.pt"
 
 class VideoClient(threading.Thread):
     def __init__(

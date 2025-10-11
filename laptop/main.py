@@ -3,11 +3,13 @@ from video_client import VideoClient
 
 if __name__ == "__main__":
     
-    animal_names = ["Wombat", "Kookaburra", "Lizard", "Koala", "Kangaroo", "Platypus",
-                "Frog", "Crocodile", "Cockatoo", "Dingo", "Bat", "Snake", "Emu",
-                "Possum", "Wallaby"]
+    animal_names = [
+        "Cockatoo", "Crocodile", "Frog", "Kangaroo", "Koala", "Owl",
+        "Platypus", "Snake", "Tasmanian Devil", "Wombat"
+    ]
+
     
-    hostIP = 'raspberrypi.local' #172.20.10.7
+    hostIP = "raspberrypi.local"
     robotControlPort = 5000
     videoPort = 8000
 
