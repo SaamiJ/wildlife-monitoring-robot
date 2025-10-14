@@ -55,7 +55,7 @@ def robot_control_server(ser, host = '', port = 5000):
 
 
 # -------- Audio Streaming Server --------
-def audio_streaming_server(host='', port=8001, device='plughw:1,0', sample_rate=16000, channels=1, sample_fmt='S16_LE', chunk_ms=20):
+def audio_streaming_server(host='', port=8001, device='plughw:0,0', sample_rate=16000, channels=1, sample_fmt='S16_LE', chunk_ms=20):
 
     # bytes per sample for S16_LE is 2
     bytes_per_sample = 2 if sample_fmt.endswith('16_LE') else 4
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     video_thread1 = threading.Thread(target=video_streaming_server, kwargs={"port": 8000}, daemon=True)
     audio_thread = threading.Thread(
         target=audio_streaming_server,
-        kwargs={"port": 8001, "device": "plughw:1,0", "sample_rate": 16000, "channels": 1, "sample_fmt": "S16_LE"},
+        kwargs={"port": 8001, "device": "plughw:0,0", "sample_rate": 16000, "channels": 1, "sample_fmt": "S16_LE"},
         daemon=True
     )
     control_thread.start()
