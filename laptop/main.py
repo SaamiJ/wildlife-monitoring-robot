@@ -4,7 +4,7 @@ from video_client import VideoClient
 if __name__ == "__main__":
     
     animal_names = [
-        "Cockatoo", "Crocodile", "Frog", "Kangaroo", "Koala", "Owl",
+        "Cockatoo", "Crocodile", "Frog", "Kangaroo", "Koala", "Owl", "Penguin",
         "Platypus", "Snake", "Tasmanian Devil", "Wombat"
     ]
 
